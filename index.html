@@ -45,7 +45,7 @@
         background: var(--bg);
         color: var(--text);
         font-family: var(--font);
-        font-size: 14px;
+        font-size: 15px;
         min-height: 100vh;
         padding: 0;
         overflow-x: hidden;
@@ -54,11 +54,11 @@
       /* ── Layout ────────────────────────────────────────── */
       .app {
         display: grid;
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: 470px 1fr;
         grid-template-rows: auto 1fr;
-        min-height: 100vh;
+        height: 100vh;
+        overflow: hidden;
       }
-
       /* ── Header ────────────────────────────────────────── */
       .header {
         grid-column: 1 / -1;
@@ -127,23 +127,25 @@
       .sidebar {
         background: var(--surface);
         border-left: 1px solid var(--border);
-        padding: 20px;
+        padding: 28px;
         display: flex;
         flex-direction: column;
         gap: 20px;
         height: calc(100vh - 61px);
         overflow-y: auto;
+        overflow-x: hidden;
         position: sticky;
         top: 61px;
+        scrollbar-width: thin;
       }
-
       /* ── Main ──────────────────────────────────────────── */
       .main {
         padding: 24px;
         display: flex;
         flex-direction: column;
         gap: 20px;
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: hidden;
         height: calc(100vh - 61px);
       }
 
@@ -153,15 +155,16 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         overflow: hidden;
+        flex-shrink: 0;
       }
 
       .card-header {
-        padding: 12px 16px;
+        padding: 14px 18px;
         border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 13px;
+        gap: 9px;
+        font-size: 14px;
         font-weight: 600;
         letter-spacing: 0.2px;
       }
@@ -171,17 +174,65 @@
       }
 
       .card-body {
-        padding: 16px;
+        padding: 18px;
       }
+
+      /* Sidebar card-body internal scroll */
+      .card-body-scroll {
+        /* لازم جسم الكارت يعمل scroll فعليًا */
+        max-height: calc(100vh - 61px - 140px);
+        overflow-y: auto;
+        min-height: 60px;
+      }
+      /* ── إزالة الـ Nested Scroll ───────────────────────── */
+      .card-body-scroll {
+        max-height: unset;
+        overflow: visible;
+        min-height: auto;
+      } /* ── تحسين Responsive ─────────────────────────────── */
+      @media (max-width: 1100px) {
+        body {
+          overflow: auto;
+        }
+        .app {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+        .sidebar {
+          position: relative;
+          top: 0;
+          height: auto;
+          border-left: none;
+          border-bottom: 1px solid var(--border);
+          overflow: visible;
+        }
+        .main {
+          height: auto;
+          overflow: visible;
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar,
+        .main {
+          padding: 16px;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        .table-wrap {
+          max-height: 300px;
+        }
+      }
+      /* ضمان إن الكارت نفسها تسمح بالتمدد */
 
       /* ── Section Label ─────────────────────────────────── */
       .section-label {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       }
 
       /* ── Form Fields ───────────────────────────────────── */
@@ -191,9 +242,9 @@
 
       .field label {
         display: block;
-        font-size: 12px;
+        font-size: 13px;
         color: var(--muted);
-        margin-bottom: 5px;
+        margin-bottom: 6px;
       }
 
       .field input {
@@ -202,9 +253,9 @@
         border: 1px solid var(--border2);
         border-radius: 6px;
         color: var(--text);
-        padding: 8px 10px;
+        padding: 10px 12px;
         font-family: var(--font);
-        font-size: 13px;
+        font-size: 14px;
         outline: none;
         transition: border-color 0.2s;
       }
@@ -222,13 +273,13 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        padding: 9px 16px;
+        gap: 7px;
+        padding: 11px 16px;
         border-radius: 6px;
         border: none;
         cursor: pointer;
         font-family: var(--font);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         transition: all 0.15s;
         width: 100%;
@@ -263,6 +314,79 @@
         background: #2ea043;
       }
 
+      .btn-images {
+        background: transparent;
+        border: 1px solid var(--blue);
+        color: var(--blue);
+      }
+
+      .btn-images:hover:not(:disabled) {
+        background: rgba(88, 166, 255, 0.1);
+      }
+
+      .btn-images.running {
+        border-color: var(--accent2);
+        color: var(--accent2);
+        animation: pulse 1.2s infinite;
+      }
+
+      .btn-stop {
+        background: transparent;
+        border: 1px solid var(--red);
+        color: var(--red);
+      }
+
+      .btn-stop:hover:not(:disabled) {
+        background: rgba(248, 81, 73, 0.1);
+      }
+
+      .btn-stop.resume {
+        border-color: var(--accent2);
+        color: var(--accent2);
+      }
+
+      .btn-stop.resume:hover:not(:disabled) {
+        background: rgba(210, 153, 34, 0.1);
+      }
+
+      .btn-danger {
+        background: rgba(248, 81, 73, 0.15);
+        border: 1px solid var(--red);
+        color: var(--red);
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: rgba(248, 81, 73, 0.25);
+        border-color: #ff6b6b;
+      }
+
+      .images-progress {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .img-stats {
+        display: flex;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .img-stat.ok {
+        color: var(--green);
+      }
+      .img-stat.skip {
+        color: var(--muted);
+      }
+      .img-stat.err {
+        color: var(--red);
+      }
+
       .btn:disabled {
         opacity: 0.4;
         cursor: not-allowed;
@@ -277,7 +401,29 @@
       }
       .template-btn-wrap {
         margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
+
+      .btn-clear-tpl {
+        background: transparent;
+        border: 1px dashed var(--accent2);
+        color: var(--accent2);
+        font-size: 12px;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+
+      .btn-clear-tpl:hover:not(:disabled) {
+        background: rgba(210, 153, 34, 0.08);
+      }
+
+      .btn-clear-tpl:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .card-body-log {
         padding-bottom: 8px;
       }
@@ -305,7 +451,7 @@
       .dropzone {
         border: 2px dashed var(--border2);
         border-radius: var(--radius);
-        padding: 24px 16px;
+        padding: 28px 16px;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s;
@@ -325,7 +471,7 @@
       }
 
       .dropzone-text {
-        font-size: 13px;
+        font-size: 14px;
         color: var(--muted);
       }
 
@@ -610,7 +756,7 @@
             <span class="card-icon">🔌</span>
             الاتصال بقاعدة البيانات
           </div>
-          <div class="card-body">
+          <div class="card-body card-body-scroll">
             <div class="field">
               <label for="txtServer">اسم السيرفر</label>
               <input
@@ -660,30 +806,6 @@
           </div>
         </div>
 
-        <!-- Stats Card -->
-        <div class="card hidden" id="statsCard">
-          <div class="card-header">
-            <span class="card-icon">📊</span>
-            إحصائيات الاستيراد
-          </div>
-          <div class="card-body">
-            <div class="stats">
-              <div class="stat">
-                <div class="stat-value" id="statRows">0</div>
-                <div class="stat-label">صف</div>
-              </div>
-              <div class="stat">
-                <div class="stat-value" id="statDone">0</div>
-                <div class="stat-label">مكتمل</div>
-              </div>
-              <div class="stat">
-                <div class="stat-value" id="statPct">0%</div>
-                <div class="stat-label">نسبة</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- File picker -->
         <div class="card" id="fileSection">
           <div class="card-header">
@@ -726,6 +848,16 @@
           </div>
         </div>
 
+        <!-- Clear Database button -->
+        <button
+          class="btn btn-danger"
+          id="btnClearDB"
+          onclick="clearDatabase()"
+          title="تفريغ جميع الأسماء والأسعار من قاعدة البيانات (سيتم طلب تأكيد)"
+        >
+          🗑️ تفريغ قاعدة البيانات
+        </button>
+
         <!-- Import button -->
         <button
           class="btn btn-success"
@@ -735,6 +867,43 @@
         >
           ⬆️ بدء الاستيراد
         </button>
+
+        <!-- Download Images button -->
+        <button
+          class="btn btn-images"
+          id="btnDownloadImages"
+          onclick="startImageDownload()"
+          disabled
+        >
+          🖼️ تحميل وتحسين الصور
+        </button>
+
+        <!-- Stop / Resume button -->
+        <button
+          class="btn btn-stop hidden"
+          id="btnStopImages"
+          onclick="toggleImageDownload()"
+        >
+          ⏹ إيقاف التحميل
+        </button>
+
+        <!-- Images Progress -->
+        <div class="images-progress hidden" id="imgProgressWrap">
+          <div class="progress-info">
+            <span class="progress-label" id="imgProgressLabel"
+              >جاري التحميل…</span
+            >
+            <span class="progress-count" id="imgProgressCount">0 / 0</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="imgProgressFill"></div>
+          </div>
+          <div class="img-stats">
+            <span class="img-stat ok" id="imgDone">✓ 0</span>
+            <span class="img-stat skip" id="imgSkip">↷ 0</span>
+            <span class="img-stat err" id="imgErr">✗ 0</span>
+          </div>
+        </div>
       </aside>
 
       <!-- ── Main ───────────────────────────────────────── -->
@@ -866,6 +1035,15 @@
             dot.className = "status-dot connected";
             txt.textContent = "متصل";
             btn.textContent = "✓ متصل";
+            // 🔒 قفل حقول الاتصال
+            ["txtServer", "txtDatabase", "txtUsername", "txtPassword"].forEach(
+              (id) => {
+                const el = document.getElementById(id);
+                el.disabled = true;
+                el.style.opacity = "0.5";
+                el.style.cursor = "not-allowed";
+              },
+            );
             log("✅ تم الاتصال بقاعدة البيانات بنجاح", "ok");
             showToast("تم الاتصال بنجاح", "success");
             updateImportButton();
@@ -924,7 +1102,6 @@
 
           parsedData = data;
           renderPreview(data.headers, data.rows);
-          updateStats(0, data.count);
 
           document.getElementById("previewCount").textContent =
             `${data.count} صف`;
@@ -987,14 +1164,217 @@
         document.getElementById("btnImport").disabled = !(
           isConnected && parsedData
         );
+        // زرار الصور يتفعل بس بعد اكتمال الاستيراد
       }
 
-      function updateStats(done, total) {
-        document.getElementById("statsCard").classList.remove("hidden");
-        document.getElementById("statRows").textContent = total;
-        document.getElementById("statDone").textContent = done;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-        document.getElementById("statPct").textContent = pct + "%";
+      // ── Image Download ────────────────────────────────────────────────────────────
+      let imgDownloading = false;
+      let imgStopped = false;
+      let imgCurrentIndex = 0; // آخر index وصلنا ليه
+      let imgTotal = 0;
+      let imgDoneCount = 0;
+      let imgSkipCount = 0;
+      let imgErrCount = 0;
+      let imgES = null; // EventSource الحالي
+
+      function toggleImageDownload() {
+        if (imgDownloading) {
+          // ── إيقاف ──
+          stopImageDownload();
+        } else if (imgStopped) {
+          // ── استكمال ──
+          resumeImageDownload();
+        }
+      }
+
+      function stopImageDownload() {
+        if (imgES) {
+          imgES.close();
+          imgES = null;
+        }
+        imgDownloading = false;
+        imgStopped = true;
+
+        const btnStop = document.getElementById("btnStopImages");
+        btnStop.textContent = "▶ استكمال التحميل";
+        btnStop.classList.add("resume");
+        btnStop.classList.remove("hidden");
+
+        const btnDl = document.getElementById("btnDownloadImages");
+        btnDl.classList.remove("running");
+        btnDl.textContent = "🖼️ تحميل وتحسين الصور";
+        btnDl.disabled = true;
+
+        document.getElementById("imgProgressLabel").textContent =
+          `متوقف عند ${imgCurrentIndex} / ${imgTotal} ⏸`;
+
+        log(
+          `⏸ تم إيقاف التحميل عند الصورة ${imgCurrentIndex} من ${imgTotal}`,
+          "warn",
+        );
+        showToast("تم إيقاف التحميل", "info");
+      }
+
+      function resumeImageDownload() {
+        imgStopped = false;
+        log(`▶ استكمال التحميل من الصورة ${imgCurrentIndex + 1}…`, "info");
+        startImageDownload(imgCurrentIndex); // يبدأ من آخر نقطة
+      }
+
+      function startImageDownload(fromIndex = 0) {
+        // إعادة تشغيل لو المستخدم ضغط إعادة المحاولة
+        if (!imgDownloading) {
+          imgErrCount = 0;
+        }
+
+        if (imgDownloading || !parsedData) return;
+
+        imgDownloading = true;
+        imgStopped = false;
+
+        const btnDl = document.getElementById("btnDownloadImages");
+        const btnStop = document.getElementById("btnStopImages");
+
+        btnDl.disabled = true;
+        btnDl.classList.add("running");
+        btnDl.textContent = "⏳ جاري التحميل…";
+
+        btnStop.classList.remove("hidden", "resume");
+        btnStop.textContent = "⏹ إيقاف التحميل";
+
+        document.getElementById("imgProgressWrap").classList.remove("hidden");
+
+        if (fromIndex === 0) {
+          // بداية جديدة — صفّر العدادات
+          imgDoneCount = 0;
+          imgSkipCount = 0;
+          imgErrCount = 0;
+          imgTotal = 0;
+          imgCurrentIndex = 0;
+          updateImgProgress(0, 0);
+          document.getElementById("imgDone").textContent = "✓ 0";
+          document.getElementById("imgSkip").textContent = "↷ 0";
+          document.getElementById("imgErr").textContent = "✗ 0";
+        }
+
+        log(
+          fromIndex === 0
+            ? "🖼️ بدء تحميل وتحسين الصور…"
+            : `▶ استكمال من ${fromIndex + 1}…`,
+          "info",
+        );
+
+        const retryMode = fromIndex > 0 || imgErrCount > 0 ? "&retry=1" : "";
+        const url = `/api/download-images?from=${fromIndex}${retryMode}`;
+        imgES = new EventSource(url);
+
+        imgES.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+
+          if (msg.type === "total") {
+            imgTotal = msg.total;
+            updateImgProgress(imgCurrentIndex, imgTotal);
+          } else if (msg.type === "progress") {
+            imgCurrentIndex = msg.current;
+
+            if (msg.status === "done") imgDoneCount++;
+            else if (msg.status === "skipped") imgSkipCount++;
+            else if (msg.status === "error") imgErrCount++;
+
+            updateImgProgress(imgCurrentIndex, imgTotal || msg.total);
+            document.getElementById("imgDone").textContent =
+              `✓ ${imgDoneCount}`;
+            document.getElementById("imgSkip").textContent =
+              `↷ ${imgSkipCount}`;
+            document.getElementById("imgErr").textContent = `✗ ${imgErrCount}`;
+
+            const icon =
+              msg.status === "done"
+                ? "🖼️"
+                : msg.status === "skipped"
+                  ? "↷"
+                  : "✗";
+            log(
+              `${icon} [${imgCurrentIndex}/${imgTotal}] itid:${msg.itid} — ${msg.name}`,
+              msg.status === "error"
+                ? "err"
+                : msg.status === "skipped"
+                  ? "warn"
+                  : "ok",
+            );
+          } else if (msg.type === "log") {
+            log(msg.message, "info");
+          } else if (msg.type === "done") {
+            imgES.close();
+            imgES = null;
+            imgDownloading = false;
+            imgStopped = false;
+            // ← إكمال البار لـ 100%
+            updateImgProgress(imgTotal, imgTotal);
+            btnDl.classList.remove("running");
+
+            // لو فيه أخطاء خلي الزرار يعيد المحاولة
+            if (imgErrCount > 0) {
+              btnDl.disabled = false;
+              btnDl.textContent = `🔄 إعادة المحاولة (${imgErrCount})`;
+            } else {
+              btnDl.disabled = false;
+              btnDl.textContent = "🔄 إعادة فحص الصور";
+            }
+
+            btnStop.classList.add("hidden");
+
+            document.getElementById("imgProgressLabel").textContent =
+              "اكتمل التحميل ✅";
+            log(
+              `🎉 اكتمل — نجح: ${imgDoneCount} — تخطي: ${imgSkipCount} — أخطاء: ${imgErrCount}`,
+              "ok",
+            );
+            showToast("اكتملت الصور بنجاح", "success");
+            // خلي الزرار شغال دائمًا بعد الانتهاء
+            btnDl.disabled = false;
+          } else if (msg.type === "error") {
+            imgES.close();
+            imgES = null;
+            imgDownloading = false;
+
+            btnDl.classList.remove("running");
+            btnDl.textContent = "🖼️ تحميل وتحسين الصور";
+            btnDl.disabled = false;
+            btnStop.classList.add("hidden");
+
+            log(`❌ خطأ: ${msg.message}`, "err");
+            showToast(msg.message, "error");
+          }
+        };
+
+        imgES.onerror = () => {
+          // لو كان المستخدم ضغط إيقاف → تجاهل الخطأ
+          if (imgStopped) return;
+
+          imgES.close();
+          imgES = null;
+          imgDownloading = false;
+
+          btnDl.classList.remove("running");
+          btnDl.disabled = false;
+          btnDl.textContent = "🖼️ تحميل وتحسين الصور";
+          btnStop.classList.add("hidden");
+
+          log("❌ انقطع الاتصال أثناء تحميل الصور", "err");
+          showToast("خطأ في تحميل الصور", "error");
+        };
+      }
+
+      function updateImgProgress(current, total) {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        document.getElementById("imgProgressFill").style.width = pct + "%";
+        document.getElementById("imgProgressCount").textContent =
+          `${current} / ${total}`;
+        if (!imgStopped) {
+          document.getElementById("imgProgressLabel").textContent =
+            current < total ? `جاري التحميل… ${pct}%` : "اكتمل ✅";
+        }
       }
 
       function startImport() {
@@ -1019,7 +1399,6 @@
           if (msg.type === "progress") {
             done = msg.current;
             updateProgress(done, msg.total);
-            updateStats(done, msg.total);
 
             const p = msg.product;
             if (p) {
@@ -1033,12 +1412,17 @@
           } else if (msg.type === "done") {
             es.close();
             importing = false;
+            // ← إكمال البار لـ 100%
+            updateProgress(msg.total, msg.total);
             document.getElementById("btnImport").textContent =
               "✅ اكتمل الاستيراد";
             document.getElementById("progressLabel").textContent =
               "اكتمل الاستيراد ✅";
             log(`🎉 تم استيراد ${msg.total} صف بنجاح`, "ok");
             showToast("اكتمل الاستيراد بنجاح", "success");
+            // تفعيل زرار الصور بعد اكتمال الاستيراد
+            document.getElementById("btnDownloadImages").disabled = false;
+            log("🖼️ يمكنك الآن تحميل وتحسين الصور", "info");
           } else if (msg.type === "error") {
             es.close();
             importing = false;
@@ -1068,6 +1452,192 @@
         document.getElementById("progressLabel").textContent =
           current < total ? `جاري الاستيراد… ${pct}%` : "اكتمل ✅";
       }
+
+      // ─────────────────────────────────────────────
+      // CLEAR DATABASE
+      // ─────────────────────────────────────────────
+
+      function resetUIState() {
+        // stop progress streams
+        if (imgES) {
+          try {
+            imgES.close();
+          } catch (_) {}
+          imgES = null;
+        }
+
+        importing = false;
+
+        // reset parsed excel data
+        parsedData = null;
+
+        // reset preview
+        document.getElementById("previewBody").innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-text">
+              لا يوجد بيانات يجب الاتصال بقاعدة البيانات اولا — ثم قم بتحميل
+              ملف Excel
+            </div>
+          </div>
+        `;
+        document.getElementById("previewCount").textContent = "";
+        document.getElementById("fileName").textContent = "";
+
+        // reset import progress
+        document.getElementById("progressWrap").classList.remove("visible");
+        document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("progressCount").textContent = "0 / 0";
+        document.getElementById("progressLabel").textContent =
+          "جاري الاستيراد…";
+
+        // reset images progress
+        document.getElementById("imgProgressWrap").classList.add("hidden");
+        document.getElementById("imgProgressFill").style.width = "0%";
+        document.getElementById("imgProgressCount").textContent = "0 / 0";
+        document.getElementById("imgDone").textContent = "✓ 0";
+        document.getElementById("imgSkip").textContent = "↷ 0";
+        document.getElementById("imgErr").textContent = "✗ 0";
+
+        // reset buttons
+        document.getElementById("btnImport").disabled = true;
+        document.getElementById("btnImport").textContent = "⬆️ بدء الاستيراد";
+
+        document.getElementById("btnDownloadImages").disabled = true;
+        document.getElementById("btnDownloadImages").textContent =
+          "🖼️ تحميل وتحسين الصور";
+        document
+          .getElementById("btnDownloadImages")
+          .classList.remove("running");
+
+        const btnStop = document.getElementById("btnStopImages");
+        btnStop.classList.add("hidden");
+
+        // reset counters used by image download
+        imgDownloading = false;
+        imgStopped = false;
+        imgCurrentIndex = 0;
+        imgTotal = 0;
+        imgDoneCount = 0;
+        imgSkipCount = 0;
+        imgErrCount = 0;
+
+        // clear log
+        document.getElementById("logBox").innerHTML = `
+          <div class="log-entry">
+            <span class="log-time">--:--</span>
+            <span class="log-text info">تم تفريغ قاعدة البيانات. ابدأ من جديد…</span>
+          </div>
+        `;
+
+        // reset progress visuals
+        document.getElementById("imgProgressWrap").classList.add("hidden");
+        document.getElementById("imgProgressLabel").textContent =
+          "جاري التحميل…";
+        document.getElementById("imgProgressCount").textContent = "0 / 0";
+      }
+
+      async function clearDatabase() {
+        if (!isConnected) {
+          showToast("يجب الاتصال بقاعدة البيانات أولاً", "error");
+          return;
+        }
+
+        const confirmed = confirm(
+          "⚠️ تحذير!\n\nسيؤدي هذا إلى حذف جميع:\n• أسماء الأصناف (عربي وإنجليزي)\n• الأسعار\n• أسماء المجموعات الرئيسية والفرعية\n\nهل أنت متأكد؟",
+        );
+
+        if (!confirmed) return;
+
+        const btn = document.getElementById("btnClearDB");
+        btn.disabled = true;
+        btn.textContent = "⏳ جاري التفريغ…";
+
+        try {
+          log("🗑️ بدء تفريغ قاعدة البيانات…", "warn");
+
+          const response = await fetch("/api/clear-database", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            log("✅ " + data.message, "ok");
+            showToast("✅ تم التفريغ بنجاح", "success");
+
+            // ── Reset Uploaded Data ─────────────────────
+            parsedData = null;
+            importing = false;
+
+            // Reset file input
+            document.getElementById("fileInput").value = "";
+            document.getElementById("fileName").textContent = "";
+
+            // Disable import buttons
+            document.getElementById("btnImport").disabled = true;
+            document.getElementById("btnImport").textContent =
+              "⬆️ بدء الاستيراد";
+
+            document.getElementById("btnDownloadImages").disabled = true;
+            document.getElementById("btnDownloadImages").textContent =
+              "🖼️ تحميل وتحسين الصور";
+
+            // Hide progress
+            document.getElementById("progressWrap").classList.remove("visible");
+            document.getElementById("imgProgressWrap").classList.add("hidden");
+
+            // Reset preview
+            document.getElementById("previewCount").textContent = "";
+
+            document.getElementById("previewBody").innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">
+                  تم تفريغ البيانات — يمكنك الآن رفع ملف Excel جديد
+                </div>
+              </div>
+            `;
+
+            // Reset progress bars
+            document.getElementById("progressFill").style.width = "0%";
+            document.getElementById("progressCount").textContent = "0 / 0";
+
+            document.getElementById("imgProgressFill").style.width = "0%";
+            document.getElementById("imgProgressCount").textContent = "0 / 0";
+
+            // Hide stop button
+            document.getElementById("btnStopImages").classList.add("hidden");
+
+            // Reset image states
+            imgDownloading = false;
+            imgStopped = false;
+            imgCurrentIndex = 0;
+            imgTotal = 0;
+            imgDoneCount = 0;
+            imgSkipCount = 0;
+            imgErrCount = 0;
+
+            // Log
+            log("📂 يمكنك الآن رفع ملف جديد والاستيراد مرة أخرى", "info");
+
+            btn.textContent = "🗑️ تفريغ قاعدة البيانات";
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (err) {
+          log(`❌ خطأ: ${err.message}`, "err");
+          showToast("❌ خطأ: " + err.message, "error");
+          btn.textContent = "🗑️ تفريغ قاعدة البيانات";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      // ─────────────────────────────────────────────
+      // CLEAR TEMPLATE
+      // ─────────────────────────────────────────────
     </script>
   </body>
 </html>
