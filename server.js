@@ -276,54 +276,104 @@ app.get("/api/import", async (req, res) => {
     );
 
     // ─────────────────────────────
-    // FAST IMPORT LOOP
+    // PASS 1: UPDATE GROUPS FIRST (dedup — مرة واحدة لكل mmid وsmid)
+    // منفصل تماماً عن الأصناف عشان الصفوف الفارغة ما توقفوش
+    // ─────────────────────────────
+
+    const updatedMmids = new Set();
+    const updatedSmids = new Set();
+
+    for (const row of parsedRows) {
+      const mmid = parseInt(row[0]);
+      const smid = parseInt(row[3]);
+
+      if (isNaN(mmid) || isNaN(smid)) continue;
+
+      // جيب أول صف فيه اسم للمجموعة الرئيسية
+      if (!updatedMmids.has(mmid)) {
+        const mainAR = String(row[1] ?? "").trim();
+        let mainEN = String(row[2] ?? "").trim();
+        mainEN = mainEN || translationCache[mainAR] || mainAR;
+        if (mainAR || mainEN) {
+          try {
+            await pool
+              .request()
+              .input("id", sql.Int, mmid)
+              .input("ar", sql.NVarChar(sql.MAX), mainAR)
+              .input("en", sql.NVarChar(sql.MAX), mainEN).query(`
+                UPDATE select_menu
+                SET mmname    = @ar,
+                    mmname_en = @en
+                WHERE mmid = @id
+              `);
+            updatedMmids.add(mmid);
+          } catch (_) {}
+        }
+      }
+
+      // جيب أول صف فيه اسم للمجموعة الفرعية
+      if (!updatedSmids.has(smid)) {
+        const subAR = String(row[5] ?? "").trim();
+        let subEN = String(row[6] ?? "").trim();
+        subEN = subEN || translationCache[subAR] || subAR;
+        if (subAR || subEN) {
+          try {
+            await pool
+              .request()
+              .input("id", sql.Int, smid)
+              .input("ar", sql.NVarChar(sql.MAX), subAR)
+              .input("en", sql.NVarChar(sql.MAX), subEN).query(`
+                UPDATE select_sub_men
+                SET smname    = @ar,
+                    smname_en = @en
+                WHERE smid = @id
+              `);
+            updatedSmids.add(smid);
+          } catch (_) {}
+        }
+      }
+    }
+
+    send({
+      type: "log",
+      message: `✅ تم تحديث ${updatedMmids.size} مجموعة رئيسية و ${updatedSmids.size} مجموعة فرعية`,
+    });
+
+    // ─────────────────────────────
+    // PASS 2: UPDATE ITEMS ONLY
     // ─────────────────────────────
 
     for (let i = 0; i < total; i++) {
       const row = parsedRows[i];
 
       const mmid = parseInt(row[0]);
-
-      const mainAR = String(row[1] ?? "").trim();
-
-      let mainEN = String(row[2] ?? "").trim();
-
       const smid = parseInt(row[3]);
-
       const itemOrder = parseInt(row[4]);
 
-      const subAR = String(row[5] ?? "").trim();
-
-      let subEN = String(row[6] ?? "").trim();
-
       const productAR = String(row[7] ?? "").trim();
-
       let productEN = String(row[8] ?? "").trim();
-
       const price = parseFloat(row[9]) || 0;
-
-      // translation from cache
-
-      mainEN = mainEN || translationCache[mainAR] || mainAR;
-
-      subEN = subEN || translationCache[subAR] || subAR;
 
       productEN = productEN || translationCache[productAR] || productAR;
 
       // update excel memory
-
+      const mainEN =
+        String(row[2] ?? "").trim() ||
+        translationCache[String(row[1] ?? "").trim()] ||
+        String(row[1] ?? "").trim();
+      const subEN =
+        String(row[6] ?? "").trim() ||
+        translationCache[String(row[5] ?? "").trim()] ||
+        String(row[5] ?? "").trim();
       row[2] = mainEN;
       row[6] = subEN;
       row[8] = productEN;
 
-      // validation
-
-      if (isNaN(mmid) || isNaN(smid) || isNaN(itemOrder)) {
-        continue;
-      }
+      // تخطى الصفوف اللي مفيهاش صنف
+      if (isNaN(mmid) || isNaN(smid) || isNaN(itemOrder)) continue;
+      if (!productAR && !productEN) continue;
 
       // get item
-
       const itemResult = await pool
         .request()
         .input("smid", sql.Int, smid)
@@ -334,55 +384,9 @@ app.get("/api/import", async (req, res) => {
           AND imid = @imid
         `);
 
-      if (itemResult.recordset.length === 0) {
-        continue;
-      }
+      if (itemResult.recordset.length === 0) continue;
 
       const itid = itemResult.recordset[0].itid;
-
-      // MAIN GROUP
-
-      await pool
-        .request()
-        .input("id", sql.Int, mmid)
-        .input("ar", sql.NVarChar(sql.MAX), mainAR)
-        .input("en", sql.NVarChar(sql.MAX), mainEN).query(`
-          UPDATE select_menu
-          SET
-            mmname = CASE
-              WHEN @ar = '' THEN mmname
-              ELSE @ar
-            END,
-
-            mmname_en = CASE
-              WHEN @en = '' THEN mmname_en
-              ELSE @en
-            END
-
-          WHERE mmid = @id
-        `);
-
-      // SUB GROUP
-
-      await pool
-        .request()
-        .input("id", sql.Int, smid)
-        .input("ar", sql.NVarChar(sql.MAX), subAR)
-        .input("en", sql.NVarChar(sql.MAX), subEN).query(`
-          UPDATE select_sub_men
-          SET
-            smname = CASE
-              WHEN @ar = '' THEN smname
-              ELSE @ar
-            END,
-
-            smname_en = CASE
-              WHEN @en = '' THEN smname_en
-              ELSE @en
-            END
-
-          WHERE smid = @id
-        `);
 
       // PRODUCT
 
@@ -429,16 +433,19 @@ app.get("/api/import", async (req, res) => {
           WHERE itid = @itid
         `);
 
-      // progress every 50 rows
+      // progress every 50 rows (1-based)
 
       if (i % 50 === 0) {
         send({
           type: "progress",
-          current: i,
+          current: i + 1,
           total,
         });
       }
     }
+
+    // تأكد البار يوصل 100% قبل done
+    send({ type: "progress", current: total, total });
 
     // ─────────────────────────────
     // SAVE EXCEL
@@ -475,6 +482,146 @@ app.get("/api/import", async (req, res) => {
   }
 });
 // ─────────────────────────────────────────────
+// DOWNLOAD & RESIZE IMAGES
+// ─────────────────────────────────────────────
+
+app.get("/api/download-images", async (req, res) => {
+  const retry = String(req.query.retry || "0") === "1";
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const send = (obj) => {
+    res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  };
+
+  // من أين نبدأ (للاستكمال بعد الإيقاف)
+  const fromIndex = parseInt(req.query.from) || 0;
+
+  if (!dbConfig) {
+    send({ type: "error", message: "قاعدة البيانات غير متصلة" });
+    return res.end();
+  }
+
+  if (parsedRows.length === 0) {
+    send({ type: "error", message: "لم يتم تحميل ملف إكسيل بعد" });
+    return res.end();
+  }
+
+  let pool;
+
+  try {
+    const sql = getSql(dbConfig);
+    pool = await createPool(dbConfig);
+
+    // ─────────────────────────────
+    // جيب الـ itid الحقيقي من DB لكل صنف
+    // ─────────────────────────────
+
+    const products = [];
+    const seen = new Set();
+
+    const OUTPUT_FOLDER = path.join(__dirname, "optimized");
+
+    // لو retry=1: نخلي السيرفر يختار فقط الصور الناقصة/الفاشلة
+    // - error/timeout/missing (مخزنينها عمليًا كـ: ملف ناقص/صغير أو Placeholder)
+    // - لو الصورة موجودة وبحجمها طبيعي: skip تلقائي
+
+    for (const row of parsedRows) {
+      const smid = parseInt(row[3]);
+      const itemOrder = parseInt(row[4]);
+      const nameAR = String(row[7] ?? "").trim();
+      const nameEN = String(row[8] ?? "").trim();
+
+      if (isNaN(smid) || isNaN(itemOrder)) continue;
+
+      const key = `${smid}_${itemOrder}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      if (!nameAR && !nameEN) continue;
+
+      try {
+        const result = await pool
+          .request()
+          .input("smid", sql.Int, smid)
+          .input("imid", sql.Int, itemOrder).query(`
+            SELECT TOP 1 itid
+            FROM select_sub_men_items
+            WHERE smid = @smid AND imid = @imid
+          `);
+
+        if (result.recordset.length > 0) {
+          const itid = result.recordset[0].itid;
+
+          if (retry) {
+            const imagePath = path.join(OUTPUT_FOLDER, `${itid}.jpg`);
+
+            // لو الصورة موجودة وبحجمها طبيعي => skip
+            if (
+              fs.existsSync(imagePath) &&
+              (() => {
+                try {
+                  return fs.statSync(imagePath).size > 500;
+                } catch (_) {
+                  return false;
+                }
+              })()
+            ) {
+              continue;
+            }
+
+            // موجودة لكن صغيرة/ناقصة أو مش موجودة => ندخل في batch للـ retry
+          }
+
+          products.push({
+            itid,
+            nameAR,
+            nameEN,
+          });
+        }
+      } catch (_) {}
+    }
+
+    await pool.close();
+    pool = null;
+
+    const total = products.length;
+    const sliced = products.slice(fromIndex);
+
+    // لو retry=1: نخلي startDownload يشتغل على batch اللي ناقص/فاشل فقط.
+    // startDownload نفسه سيحسب skip لحالات الملف الموجود بحجم طبيعي.
+
+    send({
+      type: "log",
+      message: `✅ تم جلب ${total} منتج — بدء من ${fromIndex + 1}`,
+    });
+    send({ type: "total", total });
+
+    const { startDownload } = require("./download-images");
+
+    // لو retry=1 نخلي منIndex يبدأ من 0 علشان يعيد تقييم الـbatch كله اللي تم اختياره
+    const effectiveFromIndex = retry ? 0 : fromIndex;
+
+    await startDownload(
+      retry ? sliced : sliced,
+      effectiveFromIndex,
+      total,
+      (msg) => send(msg),
+    );
+  } catch (err) {
+    send({ type: "error", message: err.message });
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch (_) {}
+    }
+    res.end();
+  }
+});
+
+// ─────────────────────────────────────────────
 // DOWNLOAD TEMPLATE
 // ─────────────────────────────────────────────
 
@@ -487,6 +634,72 @@ app.get("/api/template", (req, res) => {
 
   res.download(filePath, "rgb_import_template.xlsx");
 });
+// ─────────────────────────────────────────────
+// CLEAR DATABASE — تفريغ قاعدة البيانات مباشرة
+// ─────────────────────────────────────────────
+
+app.post("/api/clear-database", async (req, res) => {
+  if (!dbConfig) {
+    return res.json({
+      success: false,
+      message: "قاعدة البيانات غير متصلة",
+    });
+  }
+
+  let pool;
+
+  try {
+    const sql = getSql(dbConfig);
+    pool = await createPool(dbConfig);
+
+    // تفريغ أسماء المجموعات الرئيسية
+    await pool.request().query(`
+      UPDATE select_menu
+      SET mmname = '', mmname_en = ''
+    `);
+
+    // تفريغ أسماء المجموعات الفرعية
+    await pool.request().query(`
+      UPDATE select_sub_men
+      SET smname = '', smname_en = ''
+    `);
+
+    // تفريغ أسماء الأصناف والأسعار من TblProductItem
+    await pool.request().query(`
+      UPDATE TblProductItem
+      SET ItemName = '', SalesPrice = 0
+    `);
+
+    // تفريغ أسماء الأصناف من select_sub_men_items
+    await pool.request().query(`
+      UPDATE select_sub_men_items
+      SET itname = '', itname_en = ''
+    `);
+
+    // تفريغ الأسعار من prices_items
+    await pool.request().query(`
+      UPDATE prices_items
+      SET itprice = 0
+    `);
+
+    res.json({
+      success: true,
+      message: "✅ تم تفريغ قاعدة البيانات بنجاح",
+    });
+  } catch (err) {
+    res.json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch (_) {}
+    }
+  }
+});
+
 // ─────────────────────────────────────────────
 // START SERVER
 // ─────────────────────────────────────────────
