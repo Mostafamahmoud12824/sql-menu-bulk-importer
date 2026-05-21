@@ -46,6 +46,141 @@ Modern importer interface with:
 - CSS3
 
 ---
+# Database Connection Notes
+
+## SQL Server Remote Connection Requirements
+
+Before connecting the application to a remote SQL Server, make sure the following requirements are configured correctly.
+
+---
+
+## 1. Enable TCP/IP in SQL Server
+
+The SQL Server instance must allow remote TCP/IP connections.
+
+### Steps
+
+1. Open **SQL Server Configuration Manager**
+2. Go to:
+
+```txt
+SQL Server Network Configuration
+```
+
+3. Select:
+
+```txt
+Protocols for SQLEXPRESS
+```
+
+4. Enable:
+
+```txt
+TCP/IP
+```
+
+5. Restart SQL Server service
+
+---
+
+## 2. Open Windows Firewall Port
+
+The SQL Server port must be allowed through Windows Firewall.
+
+### Default SQL Server Port
+
+```txt
+1433
+```
+
+### Required Action
+
+Create an inbound firewall rule for:
+
+```txt
+TCP Port 1433
+```
+
+---
+
+## 3. Correct Server Address
+
+When connecting remotely, the application must use a valid server address.
+
+### Examples
+
+#### Local Network IP
+
+```txt
+192.168.1.10
+```
+
+#### SQL Server Instance
+
+```txt
+DESKTOP-ABC\SQLEXPRESS
+```
+
+#### Domain Address
+
+```txt
+sql.example.com
+```
+
+---
+
+## 4. Authentication
+
+The application supports:
+
+- SQL Server Authentication
+- Windows Authentication / LocalDB
+
+### Example SQL Login
+
+```txt
+Username: sa
+Password: your_password
+```
+
+---
+
+## 5. Password Changes
+
+If the SQL Server password changes, the connection will fail until the new password is updated.
+
+### Common Error
+
+```txt
+Login failed for user
+```
+
+### Solution
+
+Update the connection credentials inside the application.
+
+---
+
+## 6. Recommended Security Practices
+
+For production environments, avoid hardcoding credentials directly in source code.
+
+### Recommended Options
+
+- `.env` files
+- Encrypted configuration storage
+- Environment variables
+- Secure secrets management systems
+
+---
+
+## 7. Connection Validation
+
+The application validates the database connection before starting import operations.
+
+If the connection fails, an error message will be returned immediately.
+
+---
 
 # Installation
 
