@@ -72,9 +72,107 @@ function getSql(cfg) {
     : require("mssql");
 }
 
+function normalizeErrorMessage(err) {
+  if (!err) return "خطأ غير معروف";
+  if (typeof err === "string") return err;
+  if (err.message) {
+    if (typeof err.message === "string") return err.message;
+    if (typeof err.message === "object") {
+      try {
+        return JSON.stringify(err.message);
+      } catch (_) {
+        return String(err.message);
+      }
+    }
+    return String(err.message);
+  }
+  if (err.sqlMessage) return String(err.sqlMessage);
+  if (err.originalError && err.originalError.message)
+    return String(err.originalError.message);
+  try {
+    return JSON.stringify(err);
+  } catch (_) {
+    return String(err);
+  }
+}
+
+function toDbNullString(value) {
+  const text = String(value ?? "").trim();
+  return text === "" ? null : text;
+}
+
+function toDbNullNumber(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  if (text === "") return null;
+  const num = parseFloat(text);
+  return Number.isNaN(num) ? null : num;
+}
+
+function formatConnectError(err, database) {
+  const message = normalizeErrorMessage(err).trim();
+  const lower = message.toLowerCase();
+
+  if (
+    /(cannot open database|database.*does not exist|could not open database|login failed for user|login failed|unable to open database|invalid credentials|password.*failed|authentication failed)/.test(
+      lower,
+    )
+  ) {
+    return "اسم الداتا خطأ";
+  }
+
+  return message || "خطأ في الاتصال بقاعدة البيانات";
+}
+
 // ─────────────────────────────────────────────
 // FAST TRANSLATION
 // ─────────────────────────────────────────────
+
+function transliterateArabic(text) {
+  const map = {
+    ا: "a",
+    أ: "a",
+    إ: "e",
+    آ: "aa",
+    ب: "b",
+    ت: "t",
+    ث: "th",
+    ج: "j",
+    ح: "h",
+    خ: "kh",
+    د: "d",
+    ذ: "dh",
+    ر: "r",
+    ز: "z",
+    س: "s",
+    ش: "sh",
+    ص: "s",
+    ض: "d",
+    ط: "t",
+    ظ: "z",
+    ع: "a",
+    غ: "gh",
+    ف: "f",
+    ق: "q",
+    ك: "k",
+    ل: "l",
+    م: "m",
+    ن: "n",
+    ه: "h",
+    و: "w",
+    ي: "y",
+    ى: "a",
+    ة: "a",
+    ء: "a",
+  };
+
+  return String(text)
+    .split("")
+    .map((ch) => map[ch] || ch)
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 async function autoTranslate(arText, enText) {
   // already translated
@@ -106,11 +204,18 @@ async function autoTranslate(arText, enText) {
 
     return translated;
   } catch (err) {
-    console.log("Translation Error:", err.message);
+    const transliterated = transliterateArabic(arText).replace(/'/g, "''");
 
-    translationCache[arText] = arText;
+    console.log(
+      "Translation Error:",
+      err.message || err,
+      "→ fallback:",
+      transliterated,
+    );
 
-    return arText;
+    translationCache[arText] = transliterated;
+
+    return transliterated;
   }
 }
 
@@ -168,7 +273,7 @@ app.post("/api/connect", async (req, res) => {
   } catch (err) {
     res.json({
       success: false,
-      message: err.message,
+      message: formatConnectError(err, database),
     });
   }
 });
@@ -353,9 +458,12 @@ app.get("/api/import", async (req, res) => {
 
       const productAR = String(row[7] ?? "").trim();
       let productEN = String(row[8] ?? "").trim();
-      const price = parseFloat(row[9]) || 0;
+      const price = toDbNullNumber(row[9]);
 
       productEN = productEN || translationCache[productAR] || productAR;
+
+      const dbProductAR = toDbNullString(productAR);
+      const dbProductEN = toDbNullString(productEN);
 
       // update excel memory
       const mainEN =
@@ -391,18 +499,27 @@ app.get("/api/import", async (req, res) => {
 
       // PRODUCT
 
-      await pool
-        .request()
-        .input("itid", sql.Int, itid)
-        .input("name", sql.NVarChar(sql.MAX), productAR)
-        .input("price", sql.Decimal(18, 2), price).query(`
-          UPDATE TblProductItem
-          SET
-            ItemName = @name,
-            SalesPrice = @price,
-            Up_Date = 1
-          WHERE ID = @itid
-        `);
+      try {
+        await pool
+          .request()
+          .input("itid", sql.Int, itid)
+          .input("name", sql.NVarChar(sql.MAX), dbProductAR)
+          .input("style", sql.NVarChar(sql.MAX), dbProductEN)
+          .input("price", sql.Decimal(18, 2), price).query(`
+            UPDATE TblProductItem
+            SET
+              ItemName = @name,
+              Style_Code = @style,
+              SalesPrice = @price,
+              Up_Date = 1
+            WHERE ID = @itid
+          `);
+      } catch (updateErr) {
+        send({
+          type: "log",
+          message: `⚠️ تحذير: فشل تحديث المنتج itid:${itid} — ${updateErr.message}`,
+        });
+      }
 
       // MENU ITEM
 
@@ -449,7 +566,28 @@ app.get("/api/import", async (req, res) => {
     send({ type: "progress", current: total, total });
 
     // ─────────────────────────────
-    // SAVE EXCEL
+    // FIX EMPTY STRINGS TO NULL AFTER IMPORT
+    // ─────────────────────────────
+    await pool.request().query(`
+      UPDATE TblProductItem
+      SET
+        ItemName = NULLIF(LTRIM(RTRIM(ItemName)), ''),
+        catname = NULLIF(LTRIM(RTRIM(catname)), ''),
+        oldname = NULLIF(LTRIM(RTRIM(oldname)), ''),
+        Style_Code = NULLIF(LTRIM(RTRIM(Style_Code)), ''),
+        New_Style_Code = NULLIF(LTRIM(RTRIM(New_Style_Code)), ''),
+        Color_Code = NULLIF(LTRIM(RTRIM(Color_Code)), ''),
+        Size_Code = NULLIF(LTRIM(RTRIM(Size_Code)), '')
+      WHERE
+        ItemName = ''
+        OR catname = ''
+        OR oldname = ''
+        OR Style_Code = ''
+        OR New_Style_Code = ''
+        OR Color_Code = ''
+        OR Size_Code = '';
+    `);
+
     // ─────────────────────────────
 
     const newData = [parsedHeaders, ...parsedRows];
@@ -635,6 +773,202 @@ app.get("/api/template", (req, res) => {
 
   res.download(filePath, "rgb_import_template.xlsx");
 });
+
+// ─────────────────────────────────────────────
+// EXPORT PRE-IMPORT EXCEL FROM UPLOADED DATA
+// ─────────────────────────────────────────────
+
+app.get("/api/export-pre-import", (req, res) => {
+  if (!parsedRows || parsedRows.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "لا توجد بيانات مرفوعة للتصدير",
+    });
+  }
+
+  const headersMap = parsedHeaders.reduce((map, header, index) => {
+    const key = String(header || "")
+      .trim()
+      .toLowerCase();
+    if (key) map[key] = index;
+    return map;
+  }, {});
+
+  const lookupIndex = (names) => {
+    for (const name of names) {
+      const idx = headersMap[name.toLowerCase()];
+      if (idx !== undefined) return idx;
+    }
+    return undefined;
+  };
+
+  const nameIndex = lookupIndex([
+    "productar",
+    "producten",
+    "product ar",
+    "product en",
+    "itemname",
+    "name",
+  ]);
+  const priceIndex = lookupIndex(["price", "salesprice", "itemprice"]);
+  const mainIndex = lookupIndex([
+    "maingroupar",
+    "maingroupen",
+    "main group ar",
+    "main group en",
+    "maingroup",
+    "main group",
+    "catname",
+  ]);
+  const subIndex = lookupIndex([
+    "subgroupar",
+    "subgroupen",
+    "sub group ar",
+    "sub group en",
+    "subgroup",
+    "sub group",
+    "subcatname",
+  ]);
+
+  const rows = parsedRows.map((row) => [
+    String(row[nameIndex] ?? "").trim(),
+    String(row[priceIndex] ?? "").trim(),
+    String(row[mainIndex] ?? "").trim(),
+    String(row[subIndex] ?? "").trim(),
+  ]);
+
+  const workbook = XLSX.utils.book_new();
+  const sheetData = [
+    ["الاسم", "السعر", "المجموعة الرئيسية", "المجموعة الفرعية"],
+    ...rows,
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "PreImport");
+
+  const buffer = XLSX.write(workbook, {
+    bookType: "xlsx",
+    type: "buffer",
+  });
+
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=pre_import_data.xlsx",
+  );
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.send(buffer);
+});
+
+// ─────────────────────────────────────────────
+// EXPORT CURRENT ITEMS FROM DATABASE
+// ─────────────────────────────────────────────
+
+app.get("/api/export-current-items", async (req, res) => {
+  if (!dbConfig) {
+    return res
+      .status(400)
+      .json({ success: false, message: "قاعدة البيانات غير متصلة" });
+  }
+
+  let pool;
+
+  try {
+    pool = await createPool(dbConfig);
+    const query = `
+      WITH Items_CTE AS (
+          SELECT
+              p.ID AS ItemID,
+              i.itid,
+              LTRIM(RTRIM(p.ItemName)) AS ItemName_AR,
+              LTRIM(RTRIM(ISNULL(i.itname_en, p.ItemName))) AS ItemName_EN,
+              LTRIM(RTRIM(m.mmname)) AS mmname,
+              LTRIM(RTRIM(m.mmname_en)) AS mmname_en,
+              LTRIM(RTRIM(sm.smname)) AS SubCategory,
+              ISNULL(pr.itprice, 0) AS Price,
+              p.Style_Code,
+              ROW_NUMBER() OVER (
+                  PARTITION BY p.ID
+                  ORDER BY pr.itprice DESC
+              ) AS rn
+          FROM TblProductItem p
+          INNER JOIN prices_items pr
+              ON p.ID = pr.itid
+          LEFT JOIN select_sub_men_items i
+              ON LTRIM(RTRIM(p.ItemName)) = LTRIM(RTRIM(i.itname))
+          LEFT JOIN select_sub_men sm
+              ON i.smid = sm.smid
+          LEFT JOIN select_menu m
+              ON sm.mmid = m.mmid
+          WHERE
+              p.ItemName IS NOT NULL
+              AND LTRIM(RTRIM(p.ItemName)) <> ''
+      )
+      SELECT
+          ItemID,
+          itid,
+          ItemName_AR,
+          ItemName_EN,
+          mmname,
+          mmname_en,
+          SubCategory,
+          Price,
+          Style_Code
+      FROM Items_CTE
+      WHERE rn = 1
+      ORDER BY ItemID ASC;
+    `;
+
+    const result = await pool.request().query(query);
+    const rows = result.recordset || [];
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "لا توجد أصناف حالية للتصدير",
+      });
+    }
+
+    const sheetData = [
+      ["الاسم", "السعر", "المجموعة الرئيسية", "المجموعة الفرعية"],
+      ...rows.map((row) => [
+        row.ItemName_AR || row.ItemName_EN || "",
+        row.Price,
+        row.mmname || "",
+        row.SubCategory || "",
+      ]),
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Items");
+
+    const buffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "buffer",
+    });
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=current_items.xlsx",
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch (_) {}
+    }
+  }
+});
+
 // ─────────────────────────────────────────────
 // CLEAR DATABASE — تفريغ قاعدة البيانات مباشرة
 // ─────────────────────────────────────────────
@@ -668,7 +1002,7 @@ app.post("/api/clear-database", async (req, res) => {
     // تفريغ أسماء الأصناف والأسعار من TblProductItem
     await pool.request().query(`
       UPDATE TblProductItem
-      SET ItemName = '', SalesPrice = 0
+      SET ItemName = NULL, SalesPrice = NULL
     `);
 
     // تفريغ أسماء الأصناف من select_sub_men_items
@@ -691,6 +1025,439 @@ app.post("/api/clear-database", async (req, res) => {
     res.json({
       success: false,
       message: err.message,
+    });
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch (_) {}
+    }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORT ORIGINAL TABLES  —  نسخة مُصحَّحة بالكامل
+//
+// المشاكل التي كانت موجودة والآن مُصلَّحة:
+//
+//  1. ENCODING  → الأصل UTF-8 BOM (0xEF 0xBB 0xBF) وليس windows-1256
+//                 الـ BOM يُرسل كأول bytes قبل أي نص
+//                 بدونه يفتح النظام الملف بـ ANSI فتظهر الأحرف مشوهة
+//
+//  2. LINE ENDINGS → الأصل \n فقط (LF) وليس \r\n (CRLF)
+//                    النظام (Afaq POS) يقرأ الملف بـ LF — CRLF يسبب
+//                    "fewer columns" عند الاستيراد لأن \r يعلق آخر عمود
+//
+//  3. BOOLEAN VALUES → الأصل lowercase: true / false
+//                       SQL Server يُرجع True/False بـ capital T/F
+//                       النظام يفشل في قراءتها → يجب تحويلها لـ lowercase
+//
+//  4. NULL VALUES → NULL في DB يجب أن يُكتب كقيمة فارغة "" وليس "null"
+//                   القيمة الفارغة في الأصل هي empty string بدون quotes
+//
+//  5. TRAILING NEWLINE → الأصل لا ينتهي بسطر فارغ بعد آخر جدول
+//                         لكن بين الجداول يوجد سطر فارغ واحد فقط
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get("/api/export-original-tables", async (req, res) => {
+  if (!dbConfig) {
+    return res
+      .status(400)
+      .json({ success: false, message: "قاعدة البيانات غير متصلة" });
+  }
+
+  let pool;
+
+  try {
+    const sql = getSql(dbConfig);
+    pool = await createPool(dbConfig);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // هيكل الجداول بالترتيب الأصلي المستخرج من الملف المرفق
+    // الأعمدة بنفس الترتيب تماماً — أي عمود غير موجود → قيمة فارغة
+    // ─────────────────────────────────────────────────────────────────────
+
+    const TABLES = [
+      // ── 1. TblProductItem ── 28 عمود ──────────────────────────────────
+      {
+        name: "TblProductItem",
+        // Matches sample export header order exactly (1.xlsx / 2.xlsx)
+        columns: [
+          "ID",
+          "ItemName",
+          "catID",
+          "SalesPrice",
+          "CostPrice",
+          "Reorder",
+          "FirstBalance",
+          "CurrentBalance",
+          "SerialNo",
+          "ReportRequerd",
+          "tempbalance",
+          "catname",
+          "aid",
+          "oldname",
+          "oldcode",
+          "weght",
+          "fbalance",
+          "cbalance",
+          "Style_Code",
+          "New_Style_Code",
+          "Color_Code",
+          "Size_Code",
+          "sizecats",
+          "prepairid",
+          "sales_acc",
+          "purches_acc",
+          "Transfer",
+          "Up_Date",
+        ],
+        query: `
+          SELECT
+            ID, ItemName, catID, SalesPrice, CostPrice,
+            Reorder, FirstBalance, CurrentBalance, SerialNo,
+            ReportRequerd, tempbalance, catname, aid, oldname,
+            oldcode, weght, fbalance, cbalance, Style_Code,
+            New_Style_Code, Color_Code, Size_Code, sizecats,
+            prepairid, sales_acc, purches_acc, Transfer, Up_Date
+          FROM TblProductItem
+          ORDER BY ID ASC
+        `,
+      },
+      // ── 2. TblItemStore ── 12 عمود ────────────────────────────────────
+      {
+        name: "TblItemStore",
+        columns: [
+          "ItemId",
+          "StoreId",
+          "SalesPrice",
+          "CostPrice",
+          "Reorder",
+          "FirstBalance",
+          "CurrentBalance",
+          "EndUpdate",
+          "FirstBalancePosted",
+          "SalesPrice2",
+          "SalesPrice3",
+          "oldcurrent",
+        ],
+        query: `
+          SELECT
+            ItemId, StoreId, SalesPrice, CostPrice,
+            Reorder, FirstBalance, CurrentBalance, EndUpdate,
+            FirstBalancePosted, SalesPrice2, SalesPrice3, oldcurrent
+          FROM TblItemStore
+          ORDER BY ItemId ASC
+        `,
+      },
+      // ── 3. groups ── 13 عمود ──────────────────────────────────────────
+      {
+        name: "groups",
+        columns: [
+          "ID",
+          "Group_Name",
+          "samah",
+          "tosale",
+          "topur",
+          "inbetween",
+          "materials",
+          "gard",
+          "NoVAT",
+          "PointINOk",
+          "PointOutOk",
+          "No_VAT_ID",
+          "FeesOK",
+        ],
+        query: `
+          SELECT
+            ID, Group_Name, samah, tosale, topur,
+            inbetween, materials, gard, NoVAT,
+            PointINOk, PointOutOk, No_VAT_ID, FeesOK
+          FROM [groups]
+          ORDER BY ID ASC
+        `,
+      },
+      // ── 4. select_menu ── 6 أعمدة ─────────────────────────────────────
+      {
+        name: "select_menu",
+        columns: [
+          "mmid",
+          "mmname",
+          "mmindex",
+          "backcolor",
+          "forecolor",
+          "mmname_en",
+        ],
+        query: `
+          SELECT mmid, mmname, mmindex, backcolor, forecolor, mmname_en
+          FROM select_menu
+          ORDER BY mmid ASC
+        `,
+      },
+      // ── 5. select_menu_groups ── 3 أعمدة ──────────────────────────────
+      {
+        name: "select_menu_groups",
+        columns: ["mmid", "posid", "okk"],
+        query: `
+          SELECT mmid, posid, okk
+          FROM select_menu_groups
+          ORDER BY mmid ASC, posid ASC
+        `,
+      },
+      // ── 6. select_sub_men ── 7 أعمدة ──────────────────────────────────
+      {
+        name: "select_sub_men",
+        columns: [
+          "smid",
+          "smname",
+          "mmid",
+          "smindex",
+          "backcolor",
+          "forecolor",
+          "smname_en",
+        ],
+        query: `
+          SELECT smid, smname, mmid, smindex, backcolor, forecolor, smname_en
+          FROM select_sub_men
+          ORDER BY smid ASC
+        `,
+      },
+      // ── 7. select_sub_men_items ── 15 عمود ────────────────────────────
+      {
+        name: "select_sub_men_items",
+        columns: [
+          "smid",
+          "imid",
+          "itid",
+          "itname",
+          "itindex",
+          "price",
+          "backcolor",
+          "forecolor",
+          "size_group",
+          "show",
+          "size_group_id",
+          "itname_en",
+          "funid",
+          "Transfer",
+          "Up_Date",
+        ],
+        // [show] لأنه كلمة محجوزة في SQL Server
+        query: `
+          SELECT
+            smid, imid, itid, itname, itindex,
+            price, backcolor, forecolor, size_group,
+            [show], size_group_id, itname_en, funid, Transfer, Up_Date
+          FROM select_sub_men_items
+          ORDER BY smid ASC, imid ASC
+        `,
+      },
+      // ── 8. select_sub_men_sub_items ── 10 أعمدة (عادةً فارغ) ──────────
+      {
+        name: "select_sub_men_sub_items",
+        columns: [
+          "itid",
+          "imid",
+          "subitid",
+          "itname",
+          "price",
+          "backcolor",
+          "forecolor",
+          "itname_en",
+          "Transfer",
+          "Up_Date",
+        ],
+        query: `
+          SELECT
+            itid, imid, subitid, itname, price,
+            backcolor, forecolor, itname_en, Transfer, Up_Date
+          FROM select_sub_men_sub_items
+          ORDER BY itid ASC
+        `,
+      },
+      // ── 9. prices ── 4 أعمدة ──────────────────────────────────────────
+      {
+        name: "prices",
+        columns: ["priceid", "pricename", "priceindex", "active"],
+        query: `
+          SELECT priceid, pricename, priceindex, active
+          FROM prices
+          ORDER BY priceid ASC
+        `,
+      },
+      // ── 10. prices_items ── 7 أعمدة ───────────────────────────────────
+      {
+        name: "prices_items",
+        columns: [
+          "itid",
+          "priceid",
+          "itprice",
+          "pricename",
+          "ID_INDEX",
+          "Transfer",
+          "Up_Date",
+        ],
+        query: `
+          SELECT itid, priceid, itprice, pricename, ID_INDEX, Transfer, Up_Date
+          FROM prices_items
+          ORDER BY itid ASC, priceid ASC
+        `,
+      },
+    ];
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FIX 3: تحويل القيم البولية
+    // SQL Server يُرجع True/False (capital) — النظام يحتاج true/false (lowercase)
+    // ─────────────────────────────────────────────────────────────────────
+    function normalizeBool(val) {
+      if (val === true || val === "True" || val === "TRUE") return "true";
+      if (val === false || val === "False" || val === "FALSE") return "false";
+      return null; // ليست قيمة بولية
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FIX 1+4: escapeCSV — يتعامل مع NULL وBoolean والنصوص العربية
+    // RFC 4180: فاصلة أو " أو سطر جديد → تُلفّ بـ "..." مع escape للـ "
+    // ─────────────────────────────────────────────────────────────────────
+    function escapeCSV(val) {
+      // FIX 4: NULL/undefined → سلسلة فارغة (بدون كلمة "null")
+      if (val === null || val === undefined) return "";
+
+      // FIX 3: Boolean → lowercase
+      const boolNorm = normalizeBool(val);
+      if (boolNorm !== null) return boolNorm;
+
+      const str = String(val);
+
+      // RFC 4180 escape: فاصلة أو " أو سطر جديد → wrap
+      if (
+        str.includes(",") ||
+        str.includes('"') ||
+        str.includes("\n") ||
+        str.includes("\r")
+      ) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+
+      return str;
+    }
+
+    const exportWarnings = [];
+
+    function validateTableRow(table, row, rowIndex) {
+      const missing = table.columns.filter((col) => !(col in row));
+      const extra = Object.keys(row).filter(
+        (key) => !table.columns.includes(key),
+      );
+      if (missing.length || extra.length) {
+        const message =
+          `⚠️ Export warning for ${table.name} row ${rowIndex + 1}: expected ${table.columns.length} columns, got ${Object.keys(row).length}.` +
+          (missing.length ? ` missing=[${missing.join(",")}]` : "") +
+          (extra.length ? ` extra=[${extra.join(",")}]` : "");
+        exportWarnings.push(message);
+        console.warn(message);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // بناء محتوى الـ CSV
+    //
+    // القواعد الدقيقة المستخرجة من الملف الأصلي بالـ binary analysis:
+    //
+    //  RULE A — جدول به بيانات (غير آخر جدول):
+    //    Table: Name\nheader\nrow1\nrow2\n...\n\n
+    //    ← سطر فارغ واحد بعد آخر صف، قبل الجدول التالي
+    //
+    //  RULE B — جدول فارغ (لا بيانات):
+    //    Table: Name\nheader\n\n
+    //    ← سطر فارغ واحد بعد الـ header مباشرة
+    //
+    //  RULE C — آخر جدول (prices_items):
+    //    Table: Name\nheader\nrow1\nrow2\n...\nrowN
+    //    ← لا سطر فارغ، لا \n في النهاية (EOF مباشرة بعد آخر حرف)
+    //
+    // Run-time error 62 "Input past end of file" يحدث لأن:
+    //   - إما سطر فارغ زيادة في النهاية (النظام يحاول يقرأ سطر بعد EOF)
+    //   - أو \n زيادة في النهاية يخلي النظام يتوقع جدول تالٍ
+    // ─────────────────────────────────────────────────────────────────────
+    const csvParts = []; // كل جزء = سطر بدون \n
+
+    for (let ti = 0; ti < TABLES.length; ti++) {
+      const table = TABLES[ti];
+      const isLast = ti === TABLES.length - 1;
+
+      // سطر اسم الجدول
+      csvParts.push(`Table: ${table.name}`);
+
+      // سطر الـ Header
+      csvParts.push(table.columns.join(","));
+
+      // جلب البيانات من SQL Server
+      let rows = [];
+      try {
+        const result = await pool.request().query(table.query);
+        rows = result.recordset;
+      } catch (queryErr) {
+        console.warn(
+          `⚠️ Export: skip table "${table.name}" — ${queryErr.message}`,
+        );
+        rows = []; // جدول فارغ → يطبق RULE B
+      }
+
+      if (rows.length === 0) {
+        // RULE B: جدول فارغ → سطر فارغ بعد الـ header (حتى لو آخر جدول)
+        csvParts.push("");
+      } else {
+        // كتابة صفوف البيانات بترتيب الأعمدة الأصلي
+        for (let ri = 0; ri < rows.length; ri++) {
+          const row = rows[ri];
+          validateTableRow(table, row, ri);
+          const cells = table.columns.map((col) => escapeCSV(row[col]));
+          csvParts.push(cells.join(","));
+        }
+
+        if (!isLast) {
+          // RULE A: جدول به بيانات وليس الأخير → سطر فارغ بعد البيانات
+          csvParts.push("");
+        }
+        // RULE C: آخر جدول وبه بيانات → لا نضيف شيئاً (EOF مباشرة)
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // إنشاء الـ Buffer النهائي
+    //
+    // - UTF-8 BOM (0xEF 0xBB 0xBF): ضروري لدعم العربية وتحديد الترميز
+    // - الفاصل بين الأسطر: \n (LF فقط) — مطابق للملف الأصلي
+    // - لا \n في نهاية الملف — الأصل ينتهي مباشرة بآخر حرف بيانات
+    //   أي \n زيادة في النهاية → Run-time error 62 "Input past end of file"
+    // ─────────────────────────────────────────────────────────────────────
+    const BOM_BYTES = Buffer.from([0xef, 0xbb, 0xbf]);
+    const CONTENT_BYTES = Buffer.from(csvParts.join("\n"), "utf8"); // \n بين الأسطر فقط
+
+    const finalBuffer = Buffer.concat([BOM_BYTES, CONTENT_BYTES]);
+
+    if (exportWarnings.length > 0) {
+      res.setHeader("X-Export-Warnings-Count", String(exportWarnings.length));
+      res.setHeader(
+        "X-Export-Warnings",
+        exportWarnings.slice(0, 5).join(" | "),
+      );
+    }
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="Exported_Items_Tables.csv"',
+    );
+    res.setHeader("Content-Length", finalBuffer.length);
+
+    return res.send(finalBuffer);
+  } catch (err) {
+    console.error("Export error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: `خطأ أثناء التصدير: ${err.message}`,
     });
   } finally {
     if (pool) {
