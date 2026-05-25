@@ -349,6 +349,26 @@
         background: rgba(210, 153, 34, 0.1);
       }
 
+      /* ─── Export Original Tables button ─── */
+      .btn-export-original {
+        background: rgba(88, 166, 255, 0.12);
+        border: 1px solid var(--blue);
+        color: var(--blue);
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .btn-export-original:hover:not(:disabled) {
+        background: rgba(88, 166, 255, 0.22);
+        border-color: #79b8ff;
+        box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
+      }
+
+      .btn-export-original:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
       .btn-danger {
         background: rgba(248, 81, 73, 0.15);
         border: 1px solid var(--red);
@@ -765,16 +785,20 @@
                 aria-label="Server Name"
                 value="(localdb)\RGBDB"
                 placeholder="(localdb)\RGBDB"
+                disabled
+                title="اسم السيرفر ثابت ولا يمكن تغييره"
               />
             </div>
             <div class="field">
-              <label for="txtDatabase">اسم قاعدة البيانات</label>
+              <label for="txtDatabase"
+                >اسم قاعدة البيانات (اكتبها يدويًا)</label
+              >
               <input
                 type="text"
                 id="txtDatabase"
                 aria-label="Database Name"
-                value="data2026"
-                placeholder="data2026"
+                placeholder="مثال: data2026"
+                value=""
               />
             </div>
             <div class="field">
@@ -844,6 +868,15 @@
               >
                 ⬇️ تحميل التيمبلت
               </a>
+              <button
+                class="btn btn-secondary"
+                id="btnDownloadPreImport"
+                onclick="exportCurrentItems()"
+                disabled
+                title="تنزيل الأصناف الموجودة في قاعدة البيانات قبل رفع ملف Excel"
+              >
+                ⬇️ تنزيل أصناف قاعدة البيانات
+              </button>
             </div>
           </div>
         </div>
@@ -885,6 +918,17 @@
           onclick="toggleImageDownload()"
         >
           ⏹ إيقاف التحميل
+        </button>
+
+        <!-- ─── تنزيل الأصناف الحالية قبل الإضافة ─── -->
+        <button
+          class="btn btn-export-original"
+          id="btnExportOriginal"
+          onclick="exportCurrentItems()"
+          title="تنزيل الأصناف الموجودة في قاعدة البيانات قبل إضافة بيانات جديدة"
+          disabled
+        >
+          ⬇️ تنزيل الأصناف الحالية
         </button>
 
         <!-- Images Progress -->
@@ -1006,6 +1050,25 @@
         box.scrollTop = box.scrollHeight;
       }
 
+      function normalizeClientError(err) {
+        if (!err) return "خطأ غير معروف";
+        if (typeof err === "string") return err;
+        if (err instanceof Error) {
+          if (typeof err.message === "string") return err.message;
+          if (typeof err.message === "object")
+            return JSON.stringify(err.message);
+          return String(err.message);
+        }
+        if (typeof err === "object") {
+          try {
+            return JSON.stringify(err);
+          } catch (_) {
+            return String(err);
+          }
+        }
+        return String(err);
+      }
+
       // ── Connection ────────────────────────────────────────────────────────────────
       async function connectDB() {
         const btn = document.getElementById("btnConnect");
@@ -1018,14 +1081,24 @@
         txt.textContent = "جاري الاتصال…";
 
         try {
+          const server = document.getElementById("txtServer").value.trim();
+          const database = document.getElementById("txtDatabase").value.trim();
+          const username = document.getElementById("txtUsername").value.trim();
+          const password = document.getElementById("txtPassword").value;
+
+          if (!server) throw new Error("يرجى إدخال اسم السيرفر");
+          if (!database) throw new Error("يرجى إدخال اسم قاعدة البيانات");
+          if (!username) throw new Error("يرجى إدخال اسم المستخدم");
+          if (!password) throw new Error("يرجى إدخال كلمة المرور");
+
           const res = await fetch("/api/connect", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              server: document.getElementById("txtServer").value.trim(),
-              database: document.getElementById("txtDatabase").value.trim(),
-              username: document.getElementById("txtUsername").value.trim(),
-              password: document.getElementById("txtPassword").value,
+              server,
+              database,
+              username,
+              password,
             }),
           });
           const data = await res.json();
@@ -1039,6 +1112,7 @@
             ["txtServer", "txtDatabase", "txtUsername", "txtPassword"].forEach(
               (id) => {
                 const el = document.getElementById(id);
+                if (!el) return;
                 el.disabled = true;
                 el.style.opacity = "0.5";
                 el.style.cursor = "not-allowed";
@@ -1047,16 +1121,23 @@
             log("✅ تم الاتصال بقاعدة البيانات بنجاح", "ok");
             showToast("تم الاتصال بنجاح", "success");
             updateImportButton();
+            updateConnectionButtons();
           } else {
-            throw new Error(data.message);
+            const errMsg =
+              data.message && typeof data.message === "object"
+                ? data.message.message || JSON.stringify(data.message)
+                : String(data.message || "خطأ غير معروف");
+            throw new Error(errMsg);
           }
         } catch (err) {
           dot.className = "status-dot";
           txt.textContent = "غير متصل";
           btn.disabled = false;
           btn.textContent = "🔗 اتصال";
-          log(`❌ خطأ: ${err.message}`, "err");
-          showToast("فشل الاتصال", "error");
+          updateConnectionButtons();
+          const errorMessage = normalizeClientError(err);
+          log(`❌ خطأ: ${errorMessage}`, "err");
+          showToast(errorMessage, "error");
         }
       }
 
@@ -1108,6 +1189,7 @@
           log(`✅ تم قراءة ${data.count} صف من الملف`, "ok");
           showToast(`تم تحميل ${data.count} صف`, "success");
           updateImportButton();
+          updatePreImportDownloadButton();
         } catch (err) {
           log(`❌ خطأ في قراءة الملف: ${err.message}`, "err");
           showToast("خطأ في قراءة الملف", "error");
@@ -1165,6 +1247,67 @@
           isConnected && parsedData
         );
         // زرار الصور يتفعل بس بعد اكتمال الاستيراد
+      }
+
+      function updateConnectionButtons() {
+        const canUseDb = isConnected;
+        document.getElementById("btnExportOriginal").disabled = !canUseDb;
+        document.getElementById("btnDownloadPreImport").disabled = !canUseDb;
+      }
+
+      function updatePreImportDownloadButton() {
+        // زرار تنزيل أصناف قاعدة البيانات لن يحتاج لأي ملف مرفوع.
+        if (!isConnected) {
+          document.getElementById("btnDownloadPreImport").disabled = true;
+          return;
+        }
+
+        document.getElementById("btnDownloadPreImport").disabled = false;
+      }
+
+      async function downloadPreImportExcel() {
+        if (!parsedData || parsedData.count === 0) {
+          showToast("لا توجد بيانات للتحميل", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btnDownloadPreImport");
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "⏳ جاري التحميل…";
+
+        try {
+          const response = await fetch("/api/export-pre-import");
+          if (!response.ok) {
+            let msg = `HTTP ${response.status}`;
+            try {
+              const err = await response.json();
+              msg = err.message || msg;
+            } catch (_) {}
+            throw new Error(msg);
+          }
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "pre_import_data.xlsx";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 1000);
+
+          log("✅ تم تنزيل ملف الإكسيل قبل الإضافة", "ok");
+          showToast("تم تنزيل الملف بنجاح", "success");
+        } catch (err) {
+          log(`❌ فشل تنزيل الإكسيل: ${err.message}`, "err");
+          showToast(`فشل التنزيل: ${err.message}`, "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
       }
 
       // ── Image Download ────────────────────────────────────────────────────────────
@@ -1509,6 +1652,7 @@
         document
           .getElementById("btnDownloadImages")
           .classList.remove("running");
+        document.getElementById("btnDownloadPreImport").disabled = true;
 
         const btnStop = document.getElementById("btnStopImages");
         btnStop.classList.add("hidden");
@@ -1583,6 +1727,7 @@
             document.getElementById("btnDownloadImages").disabled = true;
             document.getElementById("btnDownloadImages").textContent =
               "🖼️ تحميل وتحسين الصور";
+            document.getElementById("btnDownloadPreImport").disabled = true;
 
             // Hide progress
             document.getElementById("progressWrap").classList.remove("visible");
@@ -1638,6 +1783,61 @@
       // ─────────────────────────────────────────────
       // CLEAR TEMPLATE
       // ─────────────────────────────────────────────
+
+      // ─────────────────────────────────────────────
+      // EXPORT ORIGINAL TABLES
+      // يقوم بطلب الـ API وتحميل الملف تلقائيًا
+      // الملف الناتج: Exported_Items_Tables.csv
+      // ─────────────────────────────────────────────
+      async function exportCurrentItems() {
+        const btn = document.getElementById("btnExportOriginal");
+
+        if (!isConnected) {
+          showToast("⚠️ يرجى الاتصال بقاعدة البيانات أولاً", "error");
+          return;
+        }
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "⏳ جاري التحميل...";
+
+        try {
+          log("📤 بدء تحميل الأصناف الحالية من قاعدة البيانات...", "info");
+
+          const response = await fetch("/api/export-current-items");
+
+          if (!response.ok) {
+            let errMsg = `HTTP ${response.status}`;
+            try {
+              const errData = await response.json();
+              errMsg = errData.message || errMsg;
+            } catch (_) {}
+            throw new Error(errMsg);
+          }
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "current_items.xlsx";
+          document.body.appendChild(a);
+          a.click();
+
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 1000);
+
+          log("✅ تم تنزيل ملف الأصناف الحالية بنجاح", "ok");
+          showToast("تم التنزيل بنجاح", "success");
+        } catch (err) {
+          log(`❌ فشل التنزيل: ${err.message}`, "err");
+          showToast("❌ فشل التنزيل: " + err.message, "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      }
     </script>
   </body>
 </html>
