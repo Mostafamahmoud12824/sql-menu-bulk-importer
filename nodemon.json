@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    "uploads/*",
+    "*.xlsx",
+    "*.csv",
+    "node_modules/*"
+  ],
+  "ext": "js,json"
+}
