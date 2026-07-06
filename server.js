@@ -9,6 +9,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
 const translateModule = require("google-translate-api-x");
+const { runGoogleDownload } = require("./google.js");
 
 const translate =
   translateModule.translate || translateModule.default || translateModule;
@@ -122,6 +123,12 @@ app.get("/index.html", (req, res) => {
 // Protect everything else
 app.use(requireAuth);
 
+// صفحة جديدة ومستقلة تمامًا: تحميل صور جوجل
+// (محمية تلقائيًا بواسطة requireAuth أعلاه — لا حاجة لأي منطق إضافي)
+app.get("/google-images.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "google-images.html"));
+});
+
 const upload = multer({
   dest: path.join(__dirname, "uploads"),
 });
@@ -129,6 +136,56 @@ const upload = multer({
 let dbConfig = null;
 let parsedRows = [];
 let parsedHeaders = [];
+
+// ─────────────────────────────────────────────
+// GOOGLE IMAGES PAGE — حالة مستقلة تمامًا عن حالة الـ Import
+// (لا تتشارك مع dbConfig/parsedRows/parsedHeaders أعلاه)
+// ─────────────────────────────────────────────
+let googleParsedProducts = [];
+let googleImagesRunning = false;
+
+// ─────────────────────────────────────────────
+// GOOGLE IMAGES — server-owned state for SSE reconnect
+// Keeps download progress/logs even when browser disconnects.
+// ─────────────────────────────────────────────
+let googleDownloadState = {
+  running: false,
+  done: false,
+  total: 0,
+  downloaded: 0,
+  failed: 0,
+  remaining: 0,
+  progressCurrent: 0,
+  progressTotal: 0,
+  currentProduct: "",
+  lastStatus: "",
+  logs: [],
+};
+
+// Keep limited logs to bound memory usage.
+const GOOGLE_LOG_LIMIT = 200;
+
+// Active SSE clients (for optional fan-out). We also keep the original
+// "send" behavior (writing into the current response) for backward compatibility.
+let googleSseClients = [];
+const googleSseClientIdToIndex = new Map();
+let googleSseClientSeq = 1;
+
+function addGoogleSseClient(res) {
+  // Keep clients minimal: just the response stream.
+  const id = googleSseClientSeq++;
+  googleSseClientIdToIndex.set(id, googleSseClients.length);
+  googleSseClients.push({ id, res });
+  return id;
+}
+
+function removeGoogleSseClient(id) {
+  const idx = googleSseClientIdToIndex.get(id);
+  if (idx === undefined) return;
+  delete googleSseClientIdToIndex.delete(id);
+  // null out instead of splicing to avoid O(n) shifts and keep ids mapping minimal
+  googleSseClients[idx] = null;
+}
 
 // ─────────────────────────────────────────────
 // TRANSLATION CACHE
@@ -1601,6 +1658,277 @@ app.get("/api/export-original-tables", async (req, res) => {
       } catch (_) {}
     }
   }
+});
+
+// ─────────────────────────────────────────────
+// GOOGLE IMAGES — رفع الإكسيل (منفصل تمامًا عن /api/upload الخاص بالـ Import)
+// ─────────────────────────────────────────────
+app.post(
+  "/api/google/upload",
+  upload.single("file"),
+  (req, res) => {
+    try {
+      if (!req.file) {
+        return res
+          .status(400)
+          .json({ success: false, message: "لم يتم رفع أي ملف" });
+      }
+
+      const allowedExt = [".xlsx", ".xls", ".csv"];
+      const ext = path.extname(req.file.originalname || "").toLowerCase();
+      if (!allowedExt.includes(ext)) {
+        return res.status(400).json({
+          success: false,
+          message: "الصيغ المسموحة فقط: xlsx, xls, csv",
+        });
+      }
+
+      const buffer = fs.readFileSync(req.file.path);
+      const workbook = XLSX.read(buffer, { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      googleParsedProducts = rows;
+
+      return res.json({
+        success: true,
+        count: rows.length,
+        fileName: req.file.originalname,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: `تعذّر قراءة الملف: ${err.message}`,
+      });
+    }
+  },
+);
+
+// ─────────────────────────────────────────────
+// GOOGLE IMAGES — بدء التحميل (SSE)، بنفس أسلوب /api/download-images و /api/import
+// ─────────────────────────────────────────────
+app.get("/api/google/start", async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const send = (obj) => {
+    res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  };
+
+  const snapshotOnly =
+    String(req.query.snapshot || req.query.reconnect || "")
+      .toLowerCase() === "1";
+
+  // ── Helper: replay the server-owned download state to this SSE client ──
+  function replaySnapshot() {
+    send({ type: "total", total: googleDownloadState.total });
+
+    if (googleDownloadState.total > 0) {
+      send({
+        type: "progress",
+        status: googleDownloadState.lastStatus || "",
+        current: googleDownloadState.progressCurrent || 0,
+        total: googleDownloadState.progressTotal || googleDownloadState.total,
+        downloaded: googleDownloadState.downloaded || 0,
+        failed: googleDownloadState.failed || 0,
+        remaining:
+          typeof googleDownloadState.remaining === "number"
+            ? googleDownloadState.remaining
+            : googleDownloadState.total,
+        productName: googleDownloadState.currentProduct || "",
+      });
+    }
+
+    if (
+      Array.isArray(googleDownloadState.logs) &&
+      googleDownloadState.logs.length > 0
+    ) {
+      for (const l of googleDownloadState.logs) {
+        send({ type: "log", message: l.message });
+      }
+    }
+
+    if (googleDownloadState.done) {
+      send({
+        type: "done",
+        total: googleDownloadState.total,
+        downloaded: googleDownloadState.downloaded,
+        failed: googleDownloadState.failed,
+      });
+    }
+  }
+
+  // Persist + update server-owned state for the currently running job.
+  // We keep the original event shapes so the existing frontend continues to work.
+  const sendAndPersist = (obj) => {
+    try {
+      if (obj && obj.type === "total") {
+        googleDownloadState.total = Number(obj.total || 0);
+        googleDownloadState.remaining = googleDownloadState.total;
+        googleDownloadState.progressTotal = googleDownloadState.total;
+        googleDownloadState.running = true;
+        googleDownloadState.done = false;
+      } else if (obj && obj.type === "progress") {
+        if (typeof obj.current === "number") {
+          googleDownloadState.progressCurrent = obj.current;
+        }
+        if (typeof obj.total === "number") {
+          googleDownloadState.progressTotal = obj.total;
+          googleDownloadState.total = obj.total;
+        }
+
+        if (typeof obj.downloaded === "number") {
+          googleDownloadState.downloaded = obj.downloaded;
+        }
+        if (typeof obj.failed === "number") {
+          googleDownloadState.failed = obj.failed;
+        }
+        if (typeof obj.remaining === "number") {
+          googleDownloadState.remaining = obj.remaining;
+        }
+
+        googleDownloadState.currentProduct = obj.productName || "";
+        googleDownloadState.lastStatus =
+          obj.status || googleDownloadState.lastStatus;
+
+        if (
+          googleDownloadState.total > 0 &&
+          googleDownloadState.progressCurrent >= googleDownloadState.total
+        ) {
+          googleDownloadState.lastStatus =
+            googleDownloadState.lastStatus || "done";
+        }
+      } else if (obj && obj.type === "log") {
+        if (
+          typeof obj.message === "string" &&
+          obj.message.trim() !== ""
+        ) {
+          googleDownloadState.logs.push({
+            message: obj.message,
+            ts: Date.now(),
+          });
+          if (googleDownloadState.logs.length > GOOGLE_LOG_LIMIT) {
+            googleDownloadState.logs.splice(
+              0,
+              googleDownloadState.logs.length - GOOGLE_LOG_LIMIT,
+            );
+          }
+        }
+      } else if (obj && obj.type === "done") {
+        googleDownloadState.running = false;
+        googleDownloadState.done = true;
+
+        if (typeof obj.total === "number") googleDownloadState.total = obj.total;
+        if (typeof obj.downloaded === "number") googleDownloadState.downloaded = obj.downloaded;
+        if (typeof obj.failed === "number") googleDownloadState.failed = obj.failed;
+
+        // Keep remaining consistent with done.
+        googleDownloadState.remaining = 0;
+        googleDownloadState.progressCurrent = googleDownloadState.total;
+        googleDownloadState.progressTotal = googleDownloadState.total;
+        googleDownloadState.currentProduct =
+          googleDownloadState.currentProduct || "";
+      } else if (obj && obj.type === "error") {
+        googleDownloadState.running = false;
+        googleDownloadState.done = false;
+        googleDownloadState.lastStatus = "error";
+      }
+    } catch (_) {
+      // never break download flow due to state handling
+    }
+
+    // Fan-out to every connected SSE client.
+    for (const client of googleSseClients) {
+      if (!client || !client.res) continue;
+      try {
+        client.res.write(`data: ${JSON.stringify(obj)}\n\n`);
+      } catch (_) {
+        // ignore broken client streams
+      }
+    }
+  };
+
+  // Register this SSE client so future events are broadcast to it too.
+  const clientId = addGoogleSseClient(res);
+
+  req.on("close", () => {
+    removeGoogleSseClient(clientId);
+  });
+
+  // ── PATH 1: Read-only snapshot — never start a new job ──
+  if (snapshotOnly) {
+    replaySnapshot();
+
+    // Keep the stream open only if a job is currently running
+    // (so this client can receive live events via fan-out).
+    if (!googleImagesRunning) {
+      return res.end();
+    }
+    // Job is running — events will be broadcast via sendAndPersist fan-out.
+    return;
+  }
+
+  // ── PATH 2: Explicit job start ──
+  // If a job is already running, replay snapshot and keep stream open for live events.
+  if (googleImagesRunning) {
+    replaySnapshot();
+    // Stream stays open; events arrive via sendAndPersist fan-out.
+    return;
+  }
+
+  // No job running. Need products to start one.
+  if (!googleParsedProducts.length) {
+    send({ type: "error", message: "يرجى رفع ملف Excel/CSV أولاً" });
+    return res.end();
+  }
+
+  // Reset state and start a new job.
+  googleImagesRunning = true;
+  googleDownloadState = {
+    running: true,
+    done: false,
+    total: 0,
+    downloaded: 0,
+    failed: 0,
+    remaining: 0,
+    progressCurrent: 0,
+    progressTotal: 0,
+    currentProduct: "",
+    lastStatus: "",
+    logs: [],
+  };
+
+  const outputDir = path.join(__dirname, "Google_images");
+
+  try {
+    await runGoogleDownload({
+      products: googleParsedProducts,
+      outputDir,
+      headless: true,
+      writeReports: true,
+      onEvent: sendAndPersist,
+    });
+  } catch (err) {
+    sendAndPersist({ type: "error", message: err.message });
+  } finally {
+    googleImagesRunning = false;
+    res.end();
+  }
+});
+
+// ─────────────────────────────────────────────
+// GOOGLE IMAGES — تحميل ملف تقرير الإكسيل الناتج (فيه رابط/رقم/حجم كل صورة)
+// ─────────────────────────────────────────────
+app.get("/api/google/report", (req, res) => {
+  const reportPath = path.join(__dirname, "googlereport.xlsx");
+  if (!fs.existsSync(reportPath)) {
+    return res
+      .status(404)
+      .json({ success: false, message: "لا يوجد تقرير بعد — قم بتشغيل التحميل أولاً" });
+  }
+  return res.download(reportPath, "googlereport.xlsx");
 });
 
 // ─────────────────────────────────────────────

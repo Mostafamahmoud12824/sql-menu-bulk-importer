@@ -1,0 +1,959 @@
+k<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>صور جوجل - Afaq Importer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="icon" type="image/png" href="RGB_new4.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Variables (مطابقة لصفحة الاستيراد الأصلية) ─── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fdf4f4;
+        --surface: #ffffff;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --border2: #94a3b8;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #dc2626;
+        --blue: #3b82f6;
+        --white: #ffffff;
+        --black: #000000;
+        --radius: 8px;
+        --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+        --mono: "JetBrains Mono", monospace;
+        --transition:
+          background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+          box-shadow 0.3s ease;
+        --card-shadow: rgba(0, 0, 0, 0.05);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(37, 99, 235, 0.1);
+        --blue-soft-08: rgba(37, 99, 235, 0.08);
+        --accent-soft-05: rgba(37, 99, 235, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.15);
+        --accent-hover: #1d4ed8;
+        --red-soft-15: rgba(220, 38, 38, 0.15);
+      }
+
+      [data-theme="dark"] {
+        --bg: #161b22;
+        --surface: #19202e;
+        --card: #1e293b;
+        --border: #334155;
+        --border2: #475569;
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --accent: #3b82f6;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #ef4444;
+        --blue: #3b82f6;
+        --card-shadow: rgba(0, 0, 0, 0.3);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(59, 130, 246, 0.1);
+        --blue-soft-08: rgba(59, 130, 246, 0.08);
+        --accent-soft-05: rgba(59, 130, 246, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.6);
+        --accent-hover: #2563eb;
+        --red-soft-15: rgba(239, 68, 68, 0.15);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 15px;
+        min-height: 100vh;
+        padding: 0;
+        overflow-x: hidden;
+        transition: var(--transition);
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+      }
+
+      /* ── Header ──────────────────────────────────────────── */
+      .header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: var(--transition);
+      }
+
+      .header-logo-img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 6px var(--logo-glow));
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .header-title span {
+        color: var(--accent);
+      }
+
+      .header-crumb {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .back-link {
+        margin-right: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+
+      .back-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .theme-toggle {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        box-shadow: 0 1px 3px var(--card-shadow);
+      }
+
+      .theme-toggle:hover {
+        border-color: var(--accent);
+        transform: scale(1.05);
+      }
+
+      .logout-btn {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--muted);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .logout-btn:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* ── Main ────────────────────────────────────────────── */
+      .main {
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .page-col {
+        width: min(100%, 720px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .page-heading h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .page-heading p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* ── Card ────────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+      }
+
+      .card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .card-icon {
+        font-size: 15px;
+      }
+
+      .card-body {
+        padding: 18px;
+      }
+
+      /* ── Dropzone ────────────────────────────────────────── */
+      .dropzone {
+        border: 2px dashed var(--border2);
+        border-radius: var(--radius);
+        padding: 32px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+          all 0.2s,
+          var(--transition);
+        background: transparent;
+      }
+
+      .dropzone:hover,
+      .dropzone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-soft-05);
+      }
+
+      .dropzone-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .dropzone-text {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .dropzone-text strong {
+        color: var(--accent);
+        display: block;
+        margin-bottom: 3px;
+        font-size: 14px;
+      }
+
+      .file-input-hidden {
+        display: none;
+      }
+
+      .file-name {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--green);
+        font-family: var(--mono);
+        word-break: break-all;
+      }
+
+      /* ── Buttons ─────────────────────────────────────────── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: 14px;
+        font-weight: 500;
+        transition:
+          all 0.15s,
+          var(--transition);
+        width: 100%;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--white);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn-primary.running {
+        animation: pulse 1.2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.55;
+        }
+      }
+
+      /* ── Progress + Stats ──────────────────────────────────── */
+      .hidden {
+        display: none;
+      }
+
+      .progress-wrap {
+        margin-top: 16px;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+
+      .progress-label {
+        color: var(--muted);
+      }
+
+      .progress-count {
+        color: var(--text);
+        font-family: var(--mono);
+      }
+
+      .progress-bar {
+        height: 6px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        border-radius: 99px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .current-product {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+
+      .current-product strong {
+        color: var(--text);
+      }
+
+      .report-link {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft-05);
+        border-radius: var(--radius);
+        padding: 11px 16px;
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+
+      .report-link:hover {
+        background: var(--blue-soft);
+      }
+
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .stat-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 8px;
+        text-align: center;
+      }
+
+      .stat-box .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: var(--mono);
+        line-height: 1;
+      }
+
+      .stat-box.ok .stat-value {
+        color: var(--green);
+      }
+      .stat-box.err .stat-value {
+        color: var(--red);
+      }
+      .stat-box.rem .stat-value {
+        color: var(--muted);
+      }
+      .stat-box.tot .stat-value {
+        color: var(--accent);
+      }
+
+      .stat-box .stat-label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      @media (max-width: 520px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* ── Log ─────────────────────────────────────────────── */
+      .log-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 12px;
+        height: 220px;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        transition: var(--transition);
+      }
+
+      .log-entry {
+        line-height: 1.5;
+        display: flex;
+        gap: 8px;
+      }
+      .log-time {
+        color: var(--border2);
+        flex-shrink: 0;
+      }
+      .log-text {
+        color: var(--text);
+      }
+      .log-text.ok {
+        color: var(--green);
+      }
+      .log-text.warn {
+        color: var(--accent2);
+      }
+      .log-text.err {
+        color: var(--red);
+      }
+      .log-text.info {
+        color: var(--blue);
+      }
+      .log-empty {
+        color: var(--muted);
+        font-family: var(--font);
+      }
+
+      /* ── Toast ───────────────────────────────────────────── */
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 13px;
+        box-shadow: 0 8px 32px var(--toast-shadow);
+        transition:
+          transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+          var(--transition);
+        z-index: 999;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      #toast.success .t-icon {
+        color: var(--green);
+      }
+      #toast.error .t-icon {
+        color: var(--red);
+      }
+      #toast.info .t-icon {
+        color: var(--blue);
+      }
+
+      @media (max-width: 768px) {
+        .main {
+          padding: 16px;
+        }
+        .card-body {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ── Header ─────────────────────────────────────── -->
+      <header class="header">
+        <img src="RGB_new4.png" alt="RGB Systems" class="header-logo-img" />
+        <div>
+          <div class="header-title">Afaq <span>Importer</span></div>
+          <div class="header-crumb">صور جوجل</div>
+        </div>
+        <a href="/index.html" class="back-link">← رجوع لصفحة الاستيراد</a>
+        <button id="themeToggle" class="theme-toggle" title="تبديل المظهر">
+          🌙
+        </button>
+        <button id="logoutBtn" class="logout-btn" title="تسجيل الخروج">
+          خروج
+        </button>
+      </header>
+
+      <!-- ── Main ───────────────────────────────────────── -->
+      <main class="main">
+        <div class="page-col">
+          <div class="page-heading">
+            <h1>🖼️ تحميل صور المنتجات من جوجل</h1>
+            <p>ارفع ملف المنتجات، ثم ابدأ التحميل وتابع التقدم مباشرة.</p>
+          </div>
+
+          <!-- رفع الملف -->
+          <div class="card" id="uploadCard">
+            <div class="card-header">
+              <span class="card-icon">📊</span> ملف المنتجات
+            </div>
+            <div class="card-body">
+              <div
+                class="dropzone"
+                id="dropzone"
+                ondragover="onDragOver(event)"
+                ondragleave="onDragLeave(event)"
+                ondrop="onDrop(event)"
+                onclick="document.getElementById('fileInput').click()"
+              >
+                <span class="dropzone-icon">📁</span>
+                <div class="dropzone-text">
+                  <strong>اسحب الملف هنا أو اضغط للاختيار</strong>
+                  xlsx, xls, أو csv
+                </div>
+              </div>
+              <input
+                type="file"
+                id="fileInput"
+                class="file-input-hidden"
+                accept=".xlsx,.xls,.csv"
+                onchange="handleFile(this)"
+              />
+              <div class="file-name" id="fileName"></div>
+            </div>
+          </div>
+
+          <!-- بدء التحميل -->
+          <div class="card">
+            <div class="card-body">
+              <button
+                class="btn btn-primary"
+                id="btnStart"
+                onclick="startDownload()"
+                disabled
+              >
+                ▶ ابدأ التحميل
+              </button>
+
+              <div class="progress-wrap hidden" id="progressWrap">
+                <div class="progress-info">
+                  <span class="progress-label" id="progressLabel"
+                    >جاري التحميل…</span
+                  >
+                  <span class="progress-count" id="progressCount">0 / 0</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="current-product" id="currentProduct"></div>
+
+                <div class="stats-row">
+                  <div class="stat-box tot">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">الإجمالي</div>
+                  </div>
+                  <div class="stat-box ok">
+                    <div class="stat-value" id="statDone">0</div>
+                    <div class="stat-label">تم التحميل</div>
+                  </div>
+                  <div class="stat-box err">
+                    <div class="stat-value" id="statFailed">0</div>
+                    <div class="stat-label">فشل</div>
+                  </div>
+                  <div class="stat-box rem">
+                    <div class="stat-value" id="statRemaining">0</div>
+                    <div class="stat-label">متبقي</div>
+                  </div>
+                </div>
+
+                <a
+                  href="/api/google/report"
+                  class="report-link hidden"
+                  id="reportLink"
+                  >⬇ تحميل تقرير الإكسيل (رابط + رقم + حجم كل صورة)</a
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- اللوج -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-icon">📋</span> سجل مباشر
+            </div>
+            <div class="card-body">
+              <div class="log-box" id="logBox">
+                <div class="log-empty">لا يوجد نشاط بعد.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast">
+      <span class="t-icon" id="toastIcon">✓</span>
+      <span id="toastMsg"></span>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+      let uploadedCount = 0;
+      let running = false;
+      let es = null;
+
+      function closeSse() {
+        if (es) {
+          try {
+            es.close();
+          } catch (_) {}
+        }
+        es = null;
+      }
+
+      // ── Shared SSE event handler — used by both snapshot and explicit start ──
+      function attachSseHandlers(eventSource) {
+        eventSource.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+
+          if (msg.type === "total") {
+            document.getElementById("progressWrap").classList.remove("hidden");
+            updateProgress(0, msg.total);
+            document.getElementById("statTotal").textContent = msg.total;
+            document.getElementById("statRemaining").textContent = msg.total;
+
+            // If a job is running (total > 0 from server), reflect it in UI.
+            if (msg.total > 0) {
+              uploadedCount = msg.total;
+            }
+          } else if (msg.type === "log") {
+            log(msg.message, "info");
+          } else if (msg.type === "progress") {
+            // Mark UI as running when we receive live progress.
+            if (!running && msg.status === "start") {
+              running = true;
+              const btn = document.getElementById("btnStart");
+              btn.disabled = true;
+              btn.classList.add("running");
+              btn.textContent = "⏳ جاري التحميل…";
+            }
+
+            if (msg.status === "start") {
+              document.getElementById("currentProduct").innerHTML =
+                `جاري البحث عن: <strong>${msg.productName || ""}</strong>`;
+              return;
+            }
+
+            updateProgress(msg.current, msg.total);
+
+            if (typeof msg.downloaded === "number")
+              document.getElementById("statDone").textContent = msg.downloaded;
+            if (typeof msg.failed === "number")
+              document.getElementById("statFailed").textContent = msg.failed;
+            if (typeof msg.remaining === "number")
+              document.getElementById("statRemaining").textContent =
+                msg.remaining;
+
+            const icon =
+              msg.status === "done"
+                ? "✔"
+                : msg.status === "skipped"
+                  ? "↷"
+                  : msg.status === "captcha"
+                    ? "⚠"
+                    : "✖";
+            const cls =
+              msg.status === "done"
+                ? "ok"
+                : msg.status === "error" || msg.status === "captcha"
+                  ? "err"
+                  : "warn";
+            const sizeInfo =
+              msg.status === "done" && typeof msg.fileSizeKB === "number"
+                ? ` (${msg.fileSizeKB} كيلوبايت)`
+                : "";
+
+            log(
+              `${icon} ${msg.productName || ""} ${
+                msg.status === "done"
+                  ? "تم تحميلها" + sizeInfo
+                  : msg.status === "error"
+                    ? "فشلت"
+                    : msg.status === "skipped"
+                      ? "تم تخطيها"
+                      : ""
+              }`,
+              cls,
+            );
+          } else if (msg.type === "done") {
+            closeSse();
+
+            running = false;
+            const btn = document.getElementById("btnStart");
+            btn.disabled = uploadedCount === 0;
+            btn.classList.remove("running");
+            btn.textContent = "🔄 إعادة التحميل";
+
+            updateProgress(msg.total, msg.total);
+
+            log(
+              `🎉 اكتمل — نجح: ${msg.downloaded} — فشل: ${msg.failed}`,
+              "ok",
+            );
+            showToast("اكتمل تحميل الصور", "success");
+            document.getElementById("reportLink").classList.remove("hidden");
+          } else if (msg.type === "error") {
+            closeSse();
+
+            running = false;
+            const btn = document.getElementById("btnStart");
+            btn.disabled = uploadedCount === 0;
+            btn.classList.remove("running");
+            btn.textContent = "▶ ابدأ التحميل";
+
+            log(`❌ خطأ: ${msg.message}`, "err");
+            showToast(msg.message, "error");
+          }
+        };
+
+        eventSource.onerror = () => {
+          // Only show error UI if we were in a running state.
+          if (!running) return;
+
+          closeSse();
+          running = false;
+
+          const btn = document.getElementById("btnStart");
+          btn.disabled = uploadedCount === 0;
+          btn.classList.remove("running");
+          btn.textContent = uploadedCount === 0 ? "▶ ابدأ التحميل" : "🔄 إعادة التحميل";
+
+          log("❌ انقطع الاتصال أثناء تحميل الصور", "err");
+          showToast("خطأ في تحميل الصور", "error");
+        };
+      }
+
+      // ── Snapshot-only SSE connection (page load) ──
+      function connectSse() {
+        // Prevent duplicate connections.
+        if (es) return;
+
+        // snapshot=1 tells server to never start a new download.
+        es = new EventSource("/api/google/start?snapshot=1");
+        attachSseHandlers(es);
+      }
+
+      // ── Toast ──────────────────────────────────────────────
+      let toastTimer;
+      function showToast(msg, type = "info") {
+        const el = document.getElementById("toast");
+        const icon = document.getElementById("toastIcon");
+        const txt = document.getElementById("toastMsg");
+        const icons = { success: "✓", error: "✕", info: "ℹ" };
+
+        el.className = `show ${type}`;
+        icon.textContent = icons[type] || "ℹ";
+        txt.textContent = msg;
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+      }
+
+      // ── Log ────────────────────────────────────────────────
+      function log(text, cls = "") {
+        const box = document.getElementById("logBox");
+        const empty = box.querySelector(".log-empty");
+        if (empty) empty.remove();
+
+        const now = new Date().toLocaleTimeString("ar-EG", { hour12: false });
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.innerHTML = `<span class="log-time">${now}</span><span class="log-text ${cls}">${text}</span>`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      // ── Logout (نفس سلوك صفحة الاستيراد) ─────────────────────
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          try {
+            await fetch("/api/logout", { method: "POST" });
+          } catch (_) {}
+          window.location.href = "/login.html";
+        });
+
+      // ── رفع الملف ─────────────────────────────────────────
+      function onDragOver(e) {
+        e.preventDefault();
+        document.getElementById("dropzone").classList.add("drag-over");
+      }
+      function onDragLeave() {
+        document.getElementById("dropzone").classList.remove("drag-over");
+      }
+      function onDrop(e) {
+        e.preventDefault();
+        document.getElementById("dropzone").classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) uploadFile(file);
+      }
+      function handleFile(input) {
+        const file = input.files[0];
+        if (file) uploadFile(file);
+      }
+
+      async function uploadFile(file) {
+        const allowed = [".xlsx", ".xls", ".csv"];
+        const ok = allowed.some((ext) =>
+          file.name.toLowerCase().endsWith(ext),
+        );
+        if (!ok) {
+          showToast("الصيغ المسموحة فقط: xlsx, xls, csv", "error");
+          return;
+        }
+
+        document.getElementById("fileName").textContent = file.name;
+        log(`📂 جاري قراءة: ${file.name}`, "info");
+
+        const form = new FormData();
+        form.append("file", file);
+
+        try {
+          const res = await fetch("/api/google/upload", {
+            method: "POST",
+            body: form,
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+
+          uploadedCount = data.count;
+          log(`✅ تم قراءة ${data.count} منتج من الملف`, "ok");
+          showToast(`تم تحميل ${data.count} منتج`, "success");
+          document.getElementById("btnStart").disabled =
+            running || uploadedCount === 0;
+        } catch (err) {
+          log(`❌ خطأ في قراءة الملف: ${err.message}`, "err");
+          showToast(err.message || "خطأ في قراءة الملف", "error");
+        }
+      }
+
+      // ── بدء التحميل (SSE) ──────────────────────────────────
+      function updateProgress(current, total) {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressCount").textContent =
+          `${current} / ${total}`;
+        document.getElementById("progressLabel").textContent =
+          current < total ? `جاري التحميل… ${pct}%` : "اكتمل ✅";
+      }
+
+      function startDownload() {
+        // Explicit start (user action). Must not proceed if already running or no products.
+        if (running || uploadedCount === 0) return;
+
+        // Close any existing snapshot/SSE connection to avoid duplicate streams.
+        closeSse();
+
+        running = true;
+        const btn = document.getElementById("btnStart");
+        btn.disabled = true;
+        btn.classList.add("running");
+        btn.textContent = "⏳ جاري التحميل…";
+
+        document.getElementById("progressWrap").classList.remove("hidden");
+        updateProgress(0, uploadedCount);
+        document.getElementById("statTotal").textContent = uploadedCount;
+        document.getElementById("statDone").textContent = "0";
+        document.getElementById("statFailed").textContent = "0";
+        document.getElementById("statRemaining").textContent = uploadedCount;
+        document.getElementById("currentProduct").textContent = "";
+
+        log("🚀 بدء تحميل الصور من جوجل…", "info");
+
+        // No snapshot param → server will start a new job.
+        es = new EventSource("/api/google/start");
+        attachSseHandlers(es);
+      }
+
+      // Snapshot-only sync on every page load (read-only UI reconciliation).
+      connectSse();
+    </script>
+  </body>
+</html>
