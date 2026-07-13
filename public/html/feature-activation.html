@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تفعيل الميزات - Afaq Importer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="icon" type="image/png" href="RGB_new4.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Variables (مطابقة لصفحة google-images.html) ─── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fdf4f4;
+        --surface: #ffffff;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --border2: #94a3b8;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #dc2626;
+        --blue: #3b82f6;
+        --white: #ffffff;
+        --black: #000000;
+        --radius: 8px;
+        --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+        --mono: "JetBrains Mono", monospace;
+        --transition:
+          background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+          box-shadow 0.3s ease;
+        --card-shadow: rgba(0, 0, 0, 0.05);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(37, 99, 235, 0.1);
+        --blue-soft-08: rgba(37, 99, 235, 0.08);
+        --accent-soft-05: rgba(37, 99, 235, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.15);
+        --accent-hover: #1d4ed8;
+        --red-soft-15: rgba(220, 38, 38, 0.15);
+        --green-soft-15: rgba(22, 163, 74, 0.15);
+      }
+
+      [data-theme="dark"] {
+        --bg: #161b22;
+        --surface: #19202e;
+        --card: #1e293b;
+        --border: #334155;
+        --border2: #475569;
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --accent: #3b82f6;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #ef4444;
+        --blue: #3b82f6;
+        --card-shadow: rgba(0, 0, 0, 0.3);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(59, 130, 246, 0.1);
+        --blue-soft-08: rgba(59, 130, 246, 0.08);
+        --accent-soft-05: rgba(59, 130, 246, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.6);
+        --accent-hover: #2563eb;
+        --red-soft-15: rgba(239, 68, 68, 0.15);
+        --green-soft-15: rgba(34, 197, 94, 0.15);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 15px;
+        min-height: 100vh;
+        padding: 0;
+        overflow-x: hidden;
+        transition: var(--transition);
+      }
+
+      body.lang-en {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+      }
+
+      /* ── Header ──────────────────────────────────────────── */
+      .header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: var(--transition);
+      }
+
+      .header-logo-img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 6px var(--logo-glow));
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .header-title span {
+        color: var(--accent);
+      }
+
+      .header-crumb {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .back-link {
+        margin-right: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+      body.lang-en .back-link {
+        margin-right: 0;
+        margin-left: auto;
+      }
+
+      .back-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .theme-toggle,
+      .lang-toggle {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        box-shadow: 0 1px 3px var(--card-shadow);
+        font-family: var(--font);
+        color: var(--text);
+      }
+      .theme-toggle {
+        font-size: 18px;
+      }
+
+      .theme-toggle:hover,
+      .lang-toggle:hover {
+        border-color: var(--accent);
+        transform: scale(1.05);
+      }
+
+      .logout-btn {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--muted);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .logout-btn:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* ── Main ────────────────────────────────────────────── */
+      .main {
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .page-col {
+        width: min(100%, 820px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding-bottom: 40px;
+      }
+
+      .page-heading h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .page-heading p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* ── Card ────────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+        box-shadow: 0 1px 2px var(--card-shadow);
+      }
+
+      .card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: 0.2px;
+        line-height: 1.2;
+      }
+
+      .card-icon {
+        font-size: 15px;
+      }
+
+      .card-body {
+        padding: 10px 18px 14px;
+      }
+
+      /* ── Feature Row / Toggle Switch ───────────────────────── */
+      .feature-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 11px 0;
+        min-height: 52px; /* consistent settings-row height */
+        border-bottom: 1px solid var(--border);
+      }
+
+      .feature-row:last-child {
+        border-bottom: none;
+      }
+
+      .feature-row:hover {
+        border-bottom-color: var(--border2);
+      }
+
+      .feature-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1px;
+        min-width: 0;
+      }
+
+      .feature-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .feature-key {
+        font-size: 10.7px;
+        color: var(--muted);
+        font-family: var(--mono);
+        line-height: 1.1;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        flex-shrink: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        background: var(--border2); /* OFF track */
+        transition: background-color 0.25s ease, transform 0.15s ease,
+          box-shadow 0.25s ease;
+        border: none;
+        outline: none;
+      }
+
+      .toggle-switch:active {
+        transform: translateY(0.5px);
+      }
+
+      .toggle-switch.on {
+        background: var(--green); /* ON track (existing behavior/colors) */
+      }
+
+      .toggle-switch .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .toggle-switch.on .knob {
+        transform: translateX(22px);
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.18);
+      }
+      html[dir="rtl"] .toggle-switch.on .knob,
+      body.lang-rtl .toggle-switch.on .knob {
+        transform: translateX(-22px);
+      }
+
+      .toggle-switch:focus-visible {
+        box-shadow: 0 0 0 3px var(--blue-soft-08);
+      }
+
+      .feature-row.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      /* ── Action bar ──────────────────────────────────────── */
+      .action-bar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 20px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.15s, var(--transition);
+        flex: 1 1 160px;
+        min-height: 44px;
+        line-height: 1;
+        outline: none;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--white);
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+      }
+      .btn-secondary:hover:not(:disabled) {
+        border-color: var(--muted);
+        background: var(--border);
+      }
+
+      .btn-danger-outline {
+        background: transparent;
+        border: 1px solid var(--red);
+        color: var(--red);
+      }
+      .btn-danger-outline:hover:not(:disabled) {
+        background: var(--red-soft-15);
+      }
+
+      .btn:focus-visible {
+        box-shadow: 0 0 0 3px var(--blue-soft-08);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+      }
+
+      .status-dot-sm {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border2);
+      }
+      .status-dot-sm.saved {
+        background: var(--green);
+      }
+      .status-dot-sm.unsaved {
+        background: var(--accent2);
+      }
+
+      .loading-state,
+      .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+
+      /* ── Toast ───────────────────────────────────────────── */
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 13px;
+        box-shadow: 0 8px 32px var(--toast-shadow);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), var(--transition);
+        z-index: 999;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      #toast.success .t-icon {
+        color: var(--green);
+      }
+      #toast.error .t-icon {
+        color: var(--red);
+      }
+      #toast.info .t-icon {
+        color: var(--blue);
+      }
+
+      @media (max-width: 768px) {
+        .main {
+          padding: 16px;
+        }
+        .card-body {
+          padding: 8px 14px 12px;
+        }
+        .action-bar .btn {
+          flex: 1 1 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ── Header ─────────────────────────────────────── -->
+      <header class="header">
+        <img src="RGB_new4.png" alt="RGB Systems" class="header-logo-img" />
+        <div>
+          <div class="header-title">Afaq <span>Importer</span></div>
+          <div class="header-crumb" id="pageCrumb">تفعيل الميزات</div>
+        </div>
+        <a href="/index.html" class="back-link" id="backLink">← رجوع لصفحة الاستيراد</a>
+        <button
+          id="langToggle"
+          class="lang-toggle"
+          title="Switch language / تبديل اللغة"
+        >
+          EN
+        </button>
+        <button id="themeToggle" class="theme-toggle" title="تبديل المظهر">
+          🌙
+        </button>
+        <button id="logoutBtn" class="logout-btn" title="تسجيل الخروج">
+          خروج
+        </button>
+      </header>
+
+      <!-- ── Main ───────────────────────────────────────── -->
+      <main class="main">
+        <div class="page-col">
+          <div class="page-heading">
+            <h1 id="pageTitle">⚙️ تفعيل الميزات</h1>
+            <p id="pageSubtitle">إدارة ميزات التطبيق</p>
+          </div>
+
+          <div id="loadingState" class="loading-state">
+            ⏳ <span id="loadingText">جاري تحميل الإعدادات…</span>
+          </div>
+
+          <div id="settingsWrap" class="hidden-wrap" style="display: none">
+            <!-- Core Modules -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-icon">🧩</span>
+                <span id="groupCoreTitle">الوحدات الأساسية</span>
+              </div>
+              <div class="card-body" id="groupCore"></div>
+            </div>
+
+            <!-- POS Features -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-icon">🛒</span>
+                <span id="groupPosTitle">ميزات نقاط البيع</span>
+              </div>
+              <div class="card-body" id="groupPos"></div>
+            </div>
+
+            <!-- Saudi Arabia Features -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-icon">🇸🇦</span>
+                <span id="groupSaTitle">ميزات المملكة العربية السعودية</span>
+              </div>
+              <div class="card-body" id="groupSa"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+              <div class="card-body" style="padding: 18px">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 14px;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                  "
+                >
+                  <span class="status-pill" id="statusPill">
+                    <span class="status-dot-sm saved" id="statusDotSm"></span>
+                    <span id="statusPillText">لا توجد تغييرات</span>
+                  </span>
+                </div>
+                <div class="action-bar">
+                  <button
+                    class="btn btn-primary"
+                    id="btnSave"
+                    onclick="saveSettings()"
+                    disabled
+                  >
+                    💾 <span id="btnSaveText">حفظ الإعدادات</span>
+                  </button>
+                  <button
+                    class="btn btn-danger-outline"
+                    id="btnReset"
+                    onclick="restoreDefaults()"
+                  >
+                    ♻️ <span id="btnResetText">استرجاع الإعدادات الافتراضية</span>
+                  </button>
+                  <button
+                    class="btn btn-secondary"
+                    id="btnCancel"
+                    onclick="cancelChanges()"
+                  >
+                    ✕ <span id="btnCancelText">إلغاء</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="errorState" class="empty-state" style="display: none"></div>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast">
+      <span class="t-icon" id="toastIcon">✓</span>
+      <span id="toastMsg"></span>
+    </div>
+
+    <script src="theme.js"></script>
+    <script>
+      // ═══════════════════════════════════════════════════════════════════
+      // FEATURE ACTIVATION — FRONTEND
+      // وحدة مستقلة تمامًا — كل الـ state محلي لهذه الصفحة فقط.
+      // ═══════════════════════════════════════════════════════════════════
+
+      // ── i18n (عربي / إنجليزي) ─────────────────────────────────────────
+      const I18N = {
+        ar: {
+          crumb: "تفعيل الميزات",
+          back: "← رجوع لصفحة الاستيراد",
+          title: "⚙️ تفعيل الميزات",
+          subtitle: "إدارة ميزات التطبيق",
+          loading: "جاري تحميل الإعدادات…",
+          groupCore: "الوحدات الأساسية",
+          groupPos: "ميزات نقاط البيع",
+          groupSa: "ميزات المملكة العربية السعودية",
+          save: "حفظ الإعدادات",
+          reset: "استرجاع الإعدادات الافتراضية",
+          cancel: "إلغاء",
+          noChanges: "لا توجد تغييرات",
+          unsavedChanges: "توجد تغييرات غير محفوظة",
+          names: {
+            EnableAdministration: "تفعيل الإدارة",
+            EnablePurchases: "تفعيل المشتريات",
+            EnableCashBox: "تفعيل الخزينة",
+            EnableLoyaltyPoints: "تفعيل نقاط الولاء",
+            EnablePOSBarcode: "تفعيل باركود المنتج",
+            EnableWarehouses: "تفعيل المخازن",
+            EnableAccountingEntries: "تفعيل القيود المحاسبية",
+            EnableZATCA: "تفعيل تكامل فاتورة (ZATCA)",
+          },
+        },
+        en: {
+          crumb: "Feature Activation",
+          back: "← Back to Import page",
+          title: "⚙️ Feature Activation",
+          subtitle: "Manage Application Features",
+          loading: "Loading settings…",
+          groupCore: "Core Modules",
+          groupPos: "POS Features",
+          groupSa: "Saudi Arabia Features",
+          save: "Save Settings",
+          reset: "Restore Default Settings",
+          cancel: "Cancel",
+          noChanges: "No unsaved changes",
+          unsavedChanges: "You have unsaved changes",
+          names: {
+            EnableAdministration: "Enable Administration",
+            EnablePurchases: "Enable Purchases",
+            EnableCashBox: "تفعيل قيمة فتح الصندوق",
+            EnableLoyaltyPoints: "تفعيل برنامج نقاطي",
+            EnablePOSBarcode: "تفعيل شاشة الباركود",
+            EnableWarehouses: "تفعيل المشتريات",
+            EnableAccountingEntries: "تفعيل شاشة الاداره",
+            EnableZATCA: "تفعيل اوبشن الزكاه",
+          },
+        },
+      };
+
+      const GROUPS = {
+        core: ["EnableAdministration", "EnablePurchases", "EnableCashBox"],
+        pos: [
+          "EnableLoyaltyPoints",
+          "EnablePOSBarcode",
+          "EnableWarehouses",
+          "EnableAccountingEntries",
+        ],
+        sa: ["EnableZATCA"],
+      };
+
+      let currentLang = localStorage.getItem("featureActivationLang") || "ar";
+      let settingsData = []; // آخر نسخة محمّلة من السيرفر
+      let localValues = {}; // key -> 0/1 (الحالة الحالية في الواجهة)
+      let dirty = false;
+
+      function applyLang(lang) {
+        currentLang = lang;
+        localStorage.setItem("featureActivationLang", lang);
+        const t = I18N[lang];
+        const isAr = lang === "ar";
+
+        document.documentElement.setAttribute("lang", lang);
+        document.documentElement.setAttribute("dir", isAr ? "rtl" : "ltr");
+        document.body.classList.toggle("lang-en", !isAr);
+
+        document.getElementById("pageCrumb").textContent = t.crumb;
+        document.getElementById("backLink").textContent = t.back;
+        document.getElementById("pageTitle").textContent = t.title;
+        document.getElementById("pageSubtitle").textContent = t.subtitle;
+        document.getElementById("loadingText").textContent = t.loading;
+        document.getElementById("groupCoreTitle").textContent = t.groupCore;
+        document.getElementById("groupPosTitle").textContent = t.groupPos;
+        document.getElementById("groupSaTitle").textContent = t.groupSa;
+        document.getElementById("btnSaveText").textContent = t.save;
+        document.getElementById("btnResetText").textContent = t.reset;
+        document.getElementById("btnCancelText").textContent = t.cancel;
+        document.getElementById("langToggle").textContent = isAr ? "EN" : "AR";
+
+        updateDirtyStatus();
+        renderAllGroups();
+      }
+
+      // ── Toast ──────────────────────────────────────────────
+      let toastTimer;
+      function showToast(msg, type = "info") {
+        const el = document.getElementById("toast");
+        const icon = document.getElementById("toastIcon");
+        const txt = document.getElementById("toastMsg");
+        const icons = { success: "✓", error: "✕", info: "ℹ" };
+
+        el.className = `show ${type}`;
+        icon.textContent = icons[type] || "ℹ";
+        txt.textContent = msg;
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+      }
+
+      // ── Load settings from server ────────────────────────────
+      async function loadSettings() {
+        document.getElementById("loadingState").style.display = "";
+        document.getElementById("settingsWrap").style.display = "none";
+        document.getElementById("errorState").style.display = "none";
+
+        try {
+          const res = await fetch("/api/feature-activation/settings");
+          const data = await res.json();
+
+          if (!data.success) throw new Error(data.message || "فشل تحميل الإعدادات");
+
+          settingsData = data.settings || [];
+          localValues = {};
+          for (const row of settingsData) {
+            localValues[row.SettingKey] = row.SettingValue ? 1 : 0;
+          }
+
+          dirty = false;
+          document.getElementById("loadingState").style.display = "none";
+          document.getElementById("settingsWrap").style.display = "";
+          renderAllGroups();
+          updateDirtyStatus();
+        } catch (err) {
+          document.getElementById("loadingState").style.display = "none";
+          const errEl = document.getElementById("errorState");
+          errEl.style.display = "";
+          errEl.textContent =
+            "❌ " + (err && err.message ? err.message : "خطأ في تحميل الإعدادات");
+          showToast(err && err.message ? err.message : "خطأ غير معروف", "error");
+        }
+      }
+
+      // ── Render toggles for a given group ─────────────────────
+      function renderGroup(groupId, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const t = I18N[currentLang];
+
+        for (const key of GROUPS[groupId]) {
+          // Default OFF until DB values have been successfully loaded.
+          const value = localValues[key] ?? 0;
+
+          const displayName = t.names[key] || key;
+
+          const row = document.createElement("div");
+          row.className = "feature-row";
+          row.innerHTML = `
+            <div class="feature-info">
+              <span class="feature-name">${displayName}</span>
+              <span class="feature-key">${key}</span>
+            </div>
+            <button
+              type="button"
+              class="toggle-switch ${value ? "on" : ""}"
+              data-key="${key}"
+              role="switch"
+              aria-checked="${value ? "true" : "false"}"
+              tabindex="0"
+            >
+              <span class="knob"></span>
+            </button>
+          `;
+          container.appendChild(row);
+        }
+
+        container.querySelectorAll(".toggle-switch").forEach((el) => {
+          el.addEventListener("click", () => toggleFeature(el));
+          el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleFeature(el);
+            }
+          });
+        });
+      }
+
+      function renderAllGroups() {
+        renderGroup("core", "groupCore");
+        renderGroup("pos", "groupPos");
+        renderGroup("sa", "groupSa");
+      }
+
+      function toggleFeature(el) {
+        const key = el.getAttribute("data-key");
+        const newValue = localValues[key] ? 0 : 1;
+        localValues[key] = newValue;
+
+        el.classList.toggle("on", !!newValue);
+        el.setAttribute("aria-checked", newValue ? "true" : "false");
+
+        updateDirtyStatus();
+      }
+
+      function updateDirtyStatus() {
+        dirty = settingsData.some(
+          (row) => (localValues[row.SettingKey] ? 1 : 0) !== (row.SettingValue ? 1 : 0),
+        );
+
+        const t = I18N[currentLang];
+        const pillText = document.getElementById("statusPillText");
+        const dot = document.getElementById("statusDotSm");
+        const btnSave = document.getElementById("btnSave");
+
+        pillText.textContent = dirty ? t.unsavedChanges : t.noChanges;
+        dot.classList.toggle("unsaved", dirty);
+        dot.classList.toggle("saved", !dirty);
+        btnSave.disabled = !dirty;
+      }
+
+      // ── Save ───────────────────────────────────────────────
+      async function saveSettings() {
+        const btn = document.getElementById("btnSave");
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.textContent = currentLang === "ar" ? "⏳ جاري الحفظ…" : "⏳ Saving…";
+
+        const updates = settingsData
+          .map((row) => ({
+            key: row.SettingKey,
+            value: localValues[row.SettingKey] ? 1 : 0,
+          }))
+          .filter((u) => {
+            const original = settingsData.find((r) => r.SettingKey === u.key);
+            return (original.SettingValue ? 1 : 0) !== u.value;
+          });
+
+        if (updates.length === 0) {
+          btn.innerHTML = originalHTML;
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/feature-activation/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ updates }),
+          });
+          const data = await res.json();
+
+          if (!data.success) throw new Error(data.message || "فشل الحفظ");
+
+          settingsData = data.settings || settingsData;
+          for (const row of settingsData) {
+            localValues[row.SettingKey] = row.SettingValue ? 1 : 0;
+          }
+
+          updateDirtyStatus();
+          showToast(
+            currentLang === "ar" ? "تم حفظ الإعدادات بنجاح" : "Settings saved successfully",
+            "success",
+          );
+        } catch (err) {
+          showToast(err && err.message ? err.message : "خطأ في الحفظ", "error");
+          btn.disabled = false;
+        } finally {
+          btn.innerHTML = originalHTML;
+          document.getElementById("btnSaveText").textContent = I18N[currentLang].save;
+        }
+      }
+
+      // ── Restore Defaults ─────────────────────────────────────
+      async function restoreDefaults() {
+        const confirmMsg =
+          currentLang === "ar"
+            ? "⚠️ سيتم استرجاع كل الإعدادات إلى قيمها الافتراضية. هل أنت متأكد؟"
+            : "⚠️ All settings will be restored to their default values. Are you sure?";
+
+        if (!confirm(confirmMsg)) return;
+
+        const btn = document.getElementById("btnReset");
+        btn.disabled = true;
+
+        try {
+          const res = await fetch("/api/feature-activation/reset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const data = await res.json();
+
+          if (!data.success) throw new Error(data.message || "فشل الاسترجاع");
+
+          settingsData = data.settings || [];
+          localValues = {};
+          for (const row of settingsData) {
+            localValues[row.SettingKey] = row.SettingValue ? 1 : 0;
+          }
+
+          renderAllGroups();
+          updateDirtyStatus();
+          showToast(
+            currentLang === "ar"
+              ? "تم استرجاع الإعدادات الافتراضية"
+              : "Default settings restored",
+            "success",
+          );
+        } catch (err) {
+          showToast(err && err.message ? err.message : "خطأ في الاسترجاع", "error");
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      // ── Cancel (يرجع للقيم المحفوظة آخر مرة) ──────────────────
+      function cancelChanges() {
+        localValues = {};
+        for (const row of settingsData) {
+          localValues[row.SettingKey] = row.SettingValue ? 1 : 0;
+        }
+        renderAllGroups();
+        updateDirtyStatus();
+        showToast(
+          currentLang === "ar" ? "تم إلغاء التغييرات غير المحفوظة" : "Unsaved changes discarded",
+          "info",
+        );
+      }
+
+      // ── Language toggle ───────────────────────────────────────
+      document.getElementById("langToggle").addEventListener("click", () => {
+        applyLang(currentLang === "ar" ? "en" : "ar");
+      });
+
+      // ── Logout (نفس سلوك باقي الصفحات) ─────────────────────
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          try {
+            await fetch("/api/logout", { method: "POST" });
+          } catch (_) {}
+          window.location.href = "/login.html";
+        });
+
+      // ── Init ───────────────────────────────────────────────
+      applyLang(currentLang);
+      loadSettings();
+    </script>
+  </body>
+</html>

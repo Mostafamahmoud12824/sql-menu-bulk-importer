@@ -1,5 +1,12 @@
-//https://images.google.com/
+// Entry wrapper. Main app moved to server/app.js (folder reorg), but
+// we keep this file so existing run/nodemon entry continues working.
+
+// Restore original behavior: server.js is the entrypoint.
+// (Folder reorganization is in progress; this restore prevents runtime breakage.)
+
 const express = require("express");
+
+
 const multer = require("multer");
 const XLSX = require("xlsx");
 const path = require("path");
@@ -9,7 +16,11 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
 const translateModule = require("google-translate-api-x");
-const { runGoogleDownload } = require("./google.js");
+const { runGoogleDownload } = require("./server/services/google.js");
+const customerImportRouter = require("./server/routes/customer-import-routes");
+
+
+
 
 const translate =
   translateModule.translate || translateModule.default || translateModule;
@@ -19,9 +30,7 @@ const app = express();
 // ─────────────────────────────────────────────
 // AUTH CONFIG
 // ─────────────────────────────────────────────
-// اليوزر ثابت، والباسورد مخزّن كـ hash (bcrypt) فقط — لا يوجد نص واضح هنا.
-// لتغيير بيانات الدخول: شغّل "node generate-password.js" لتوليد hash جديد
-// وضعه في AUTH_PASSWORD_HASH بالأسفل.
+// AUTH_PASSWORD_HASH .
 const AUTH_USERNAME = "admin";
 const AUTH_PASSWORD_HASH =
   "$2b$10$TUO3zCmmeQFzwvGkuVBVku4asUaHkIewqg11wLXklXR698y1Nop4e";
@@ -45,8 +54,9 @@ app.use(
 
 // صفحة اللوجين والملفات الثابتة الخاصة بها متاحة بدون تسجيل دخول
 app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
+  res.sendFile(path.join(__dirname, "public/html/login.html"));
 });
+
 // NOTE: لا نستخدم express.static(__dirname) ولا static عام؛ سيتم إتاحة assets المطلوبة فقط لاحقًا.
 // (RGB_new4.png سيتم إتاحتها ضمن public-only static blocks.)
 
@@ -94,13 +104,15 @@ app.post("/api/logout", (req, res) => {
 // STATIC FILES (public only)
 // IMPORTANT: Do not expose index.html (or any protected asset) before requireAuth.
 // ─────────────────────────────────────────────
-app.use('/login.css', express.static(path.join(__dirname, 'login.css')));
-app.use('/theme.js', express.static(path.join(__dirname, 'theme.js')));
-app.use('/RGB_new4.png', express.static(path.join(__dirname, 'RGB_new4.png')));
+app.use('/login.css', express.static(path.join(__dirname, 'public/css/login.css')));
+app.use('/theme.js', express.static(path.join(__dirname, 'public/js/theme.js')));
+app.use('/RGB_new4.png', express.static(path.join(__dirname, 'public/images/RGB_new4.png')));
+
 app.use('/favicon.ico', (req, res) => {
-  const fp = path.join(__dirname, 'RGB_new4.png');
+  const fp = path.join(__dirname, 'public/images/RGB_new4.png');
   return res.sendFile(fp);
 });
+
 
 // Public login page (explicit, not via static middleware)
 // (already defined at the top of the file)
@@ -108,17 +120,18 @@ app.use('/favicon.ico', (req, res) => {
 // Authenticated HTML entry points
 app.get("/", (req, res, next) => {
   if (req.session && req.session.loggedIn) {
-    return res.sendFile(path.join(__dirname, "index.html"));
+    return res.sendFile(path.join(__dirname, "public/html/index.html"));
   }
   return res.redirect("/login.html");
 });
 
 app.get("/index.html", (req, res) => {
   if (req.session && req.session.loggedIn) {
-    return res.sendFile(path.join(__dirname, "index.html"));
+    return res.sendFile(path.join(__dirname, "public/html/index.html"));
   }
   return res.redirect("/login.html");
 });
+
 
 // Protect everything else
 app.use(requireAuth);
@@ -126,8 +139,53 @@ app.use(requireAuth);
 // صفحة جديدة ومستقلة تمامًا: تحميل صور جوجل
 // (محمية تلقائيًا بواسطة requireAuth أعلاه — لا حاجة لأي منطق إضافي)
 app.get("/google-images.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "google-images.html"));
+  res.sendFile(path.join(__dirname, "public/html/google-images.html"));
 });
+
+// صفحة جديدة ومستقلة تمامًا: استيراد العملاء
+// (محمية تلقائيًا بواسطة requireAuth أعلاه — لا حاجة لأي منطق إضافي)
+app.get("/customer-import.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/customer-import.html"));
+});
+
+app.use("/api/customer-import", customerImportRouter);
+
+// ─────────────────────────────────────────────
+// صفحة جديدة ومستقلة تمامًا: تفعيل الميزات (Feature Activation)
+// (محمية تلقائيًا بواسطة requireAuth أعلاه — لا حاجة لأي منطق إضافي)
+// الموديول معزول بالكامل في ملفات منفصلة (HTML/CSS/JS + router + service +
+// data layer)، ونمرّر له فقط مراجع لدوال الاتصال الموجودة بالفعل
+// (createPool / getSql) ودالة لقراءة dbConfig الحالي — من غير ما نلمس
+// منطق الاتصال الأصلي أو أي state آخر.
+// ─────────────────────────────────────────────
+const createFeatureActivationRouter = require("./server/routes/feature-activation-routes");
+
+app.get("/feature-activation.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/feature-activation.html"));
+});
+
+app.use(
+  "/feature-activation.css",
+  express.static(path.join(__dirname, "public/css/feature-activation.css")),
+);
+app.use(
+  "/feature-activation.js",
+  express.static(path.join(__dirname, "public/js/feature-activation.js")),
+);
+app.use(
+  "/feature-activation-dashboard.css",
+  express.static(path.join(__dirname, "public/css/feature-activation-dashboard.css")),
+);
+
+app.use(
+
+  "/api/feature-activation",
+  createFeatureActivationRouter({
+    getDbConfig: () => dbConfig,
+    createPool,
+    getSql,
+  }),
+);
 
 const upload = multer({
   dest: path.join(__dirname, "uploads"),
@@ -929,7 +987,9 @@ app.get("/api/download-images", async (req, res) => {
     });
     send({ type: "total", total });
 
-    const { startDownload } = require("./download-images");
+const { startDownload } = require("./server/services/download-images.js");
+
+
 
     // لو retry=1 نخلي منIndex يبدأ من 0 علشان يعيد تقييم الـbatch كله اللي تم اختياره
     const effectiveFromIndex = retry ? 0 : fromIndex;

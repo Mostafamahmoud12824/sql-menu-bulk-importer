@@ -1,0 +1,304 @@
+/* Feature Activation dashboard module CSS (SCOPED)
+   هدفه عزل الأنماط عن باقي لوحة التحكم.
+*/
+
+/* Use only existing dashboard tokens (no :root/body/* resets here). */
+
+#featureActivationSection.feature-activation-page {
+  /* Keep it fully contained */
+  width: 100%;
+}
+
+/* Avoid overriding dashboard layout; let the module provide its own internal layout */
+#featureActivationSection.feature-activation-page,
+#featureActivationSection.feature-activation-page * {
+  box-sizing: border-box;
+}
+
+#featureActivationSection.feature-activation-page.hidden {
+  display: none;
+}
+
+/* Module-level typography */
+#featureActivationSection.feature-activation-page {
+  display: flex;
+}
+
+/* Internal page wrapper */
+#featureActivationSection.feature-activation-page .fa-page-col {
+  width: min(100%, 900px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+#featureActivationSection.feature-activation-page .fa-page-heading h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+#featureActivationSection.feature-activation-page .fa-page-heading p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#featureActivationSection.feature-activation-page .loading-state,
+#featureActivationSection.feature-activation-page .empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+#featureActivationSection.feature-activation-page .fa-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+#featureActivationSection.feature-activation-page .fa-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+#featureActivationSection.feature-activation-page .fa-card-body {
+  padding: 14px 18px;
+}
+
+#featureActivationSection.feature-activation-page .connection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+#featureActivationSection.feature-activation-page .connection-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#featureActivationSection.feature-activation-page .connection-field input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+#featureActivationSection.feature-activation-page .connection-field input:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+#featureActivationSection.feature-activation-page .feature-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  min-height: 52px; /* consistent row height so the toggle is vertically centered the same way on every row */
+  border-bottom: 1px solid var(--border);
+  transition: border-color 0.2s ease;
+}
+
+#featureActivationSection.feature-activation-page .feature-row:last-child {
+  border-bottom: none;
+}
+
+#featureActivationSection.feature-activation-page .feature-row:hover {
+  border-bottom-color: var(--border2);
+}
+
+#featureActivationSection.feature-activation-page .feature-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* allows long names/keys to wrap instead of overflowing past the toggle */
+}
+
+#featureActivationSection.feature-activation-page .feature-name {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+#featureActivationSection.feature-activation-page .feature-key {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0; /* prevents the switch from being squeezed/distorted by long labels */
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--border2);
+  transition: background-color 0.25s ease, transform 0.15s ease;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch:active {
+  transform: translateY(0.5px);
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch.on {
+  background: var(--green);
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch .knob {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px; /* FIX: was "left: 3px" — hard-coded physical offset broke RTL sliding.
+                               inset-inline-start mirrors automatically with dir="rtl", same approach
+                               already used correctly on the standalone feature-activation.html page. */
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch.on .knob {
+  transform: translateX(22px);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.18);
+}
+
+/* RTL knob direction */
+html[dir="rtl"] #featureActivationSection.feature-activation-page .toggle-switch.on .knob {
+  transform: translateX(-22px);
+}
+
+#featureActivationSection.feature-activation-page .toggle-switch:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-soft-08);
+}
+
+#featureActivationSection.feature-activation-page .feature-row.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+#featureActivationSection.feature-activation-page .action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#featureActivationSection.feature-activation-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s, var(--transition);
+  flex: 1 1 160px;
+}
+
+#featureActivationSection.feature-activation-page .btn-primary {
+  background: var(--accent);
+  color: var(--white);
+}
+
+#featureActivationSection.feature-activation-page .btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+#featureActivationSection.feature-activation-page .btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+
+#featureActivationSection.feature-activation-page .btn-secondary:hover:not(:disabled) {
+  border-color: var(--muted);
+  background: var(--border);
+}
+
+#featureActivationSection.feature-activation-page .btn-danger-outline {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
+#featureActivationSection.feature-activation-page .btn-danger-outline:hover:not(:disabled) {
+  background: var(--red-soft-15);
+}
+
+#featureActivationSection.feature-activation-page .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  #featureActivationSection.feature-activation-page .connection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#featureActivationSection.feature-activation-page .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+#featureActivationSection.feature-activation-page .status-dot-sm {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+}
+
+#featureActivationSection.feature-activation-page .status-dot-sm.saved {
+  background: var(--green);
+}
+
+#featureActivationSection.feature-activation-page .status-dot-sm.unsaved {
+  background: var(--accent2);
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Toast is global in dashboard (#toast). Feature module uses existing #toast. */

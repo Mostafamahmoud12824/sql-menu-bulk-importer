@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>استيراد العملاء - Afaq Importer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="icon" type="image/png" href="RGB_new4.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Variables (مطابقة لصفحة صور جوجل / صفحة الاستيراد الأصلية) ─── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fdf4f4;
+        --surface: #ffffff;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --border2: #94a3b8;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #dc2626;
+        --blue: #3b82f6;
+        --white: #ffffff;
+        --black: #000000;
+        --radius: 8px;
+        --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+        --mono: "JetBrains Mono", monospace;
+        --transition:
+          background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+          box-shadow 0.3s ease;
+        --card-shadow: rgba(0, 0, 0, 0.05);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(37, 99, 235, 0.1);
+        --blue-soft-08: rgba(37, 99, 235, 0.08);
+        --accent-soft-05: rgba(37, 99, 235, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.15);
+        --accent-hover: #1d4ed8;
+        --red-soft-15: rgba(220, 38, 38, 0.15);
+        --green-soft-15: rgba(22, 163, 74, 0.15);
+      }
+
+      [data-theme="dark"] {
+        --bg: #161b22;
+        --surface: #19202e;
+        --card: #1e293b;
+        --border: #334155;
+        --border2: #475569;
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --accent: #3b82f6;
+        --accent2: #64748b;
+        --green: #22c55e;
+        --red: #ef4444;
+        --blue: #3b82f6;
+        --card-shadow: rgba(0, 0, 0, 0.3);
+        --logo-glow: rgba(41, 182, 246, 0.5);
+        --blue-soft: rgba(59, 130, 246, 0.1);
+        --blue-soft-08: rgba(59, 130, 246, 0.08);
+        --accent-soft-05: rgba(59, 130, 246, 0.05);
+        --toast-shadow: rgba(0, 0, 0, 0.6);
+        --accent-hover: #2563eb;
+        --red-soft-15: rgba(239, 68, 68, 0.15);
+        --green-soft-15: rgba(34, 197, 94, 0.15);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 15px;
+        min-height: 100vh;
+        padding: 0;
+        overflow-x: hidden;
+        transition: var(--transition);
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+      }
+
+      /* ── Header ──────────────────────────────────────────── */
+      .header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: var(--transition);
+      }
+
+      .header-logo-img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 6px var(--logo-glow));
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .header-title span {
+        color: var(--accent);
+      }
+
+      .header-crumb {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .back-link {
+        margin-right: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+
+      .back-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .theme-toggle {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        box-shadow: 0 1px 3px var(--card-shadow);
+      }
+
+      .theme-toggle:hover {
+        border-color: var(--accent);
+        transform: scale(1.05);
+      }
+
+      .logout-btn {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--muted);
+        font-family: var(--font);
+        font-size: 12.5px;
+        border-radius: var(--radius);
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .logout-btn:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* ── Main ────────────────────────────────────────────── */
+      .main {
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .page-col {
+        width: min(100%, 760px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .page-heading h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .page-heading p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* ── Card ────────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+      }
+
+      .card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .card-icon {
+        font-size: 15px;
+      }
+
+      .card-body {
+        padding: 18px;
+      }
+
+      /* ── Fields ──────────────────────────────────────────── */
+      .field {
+        margin-bottom: 12px;
+      }
+
+      .field label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .field input {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        border-radius: 6px;
+        color: var(--text);
+        padding: 10px 12px;
+        font-family: var(--font);
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .field input:focus {
+        border-color: var(--accent);
+      }
+
+      .field input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      @media (max-width: 560px) {
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .conn-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border2);
+        transition: background 0.3s;
+      }
+
+      .status-dot.connected {
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+      }
+
+      .status-dot.connecting {
+        background: var(--accent2);
+        animation: pulse 1s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── Dropzone ────────────────────────────────────────── */
+      .dropzone {
+        border: 2px dashed var(--border2);
+        border-radius: var(--radius);
+        padding: 32px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+          all 0.2s,
+          var(--transition);
+        background: transparent;
+      }
+
+      .dropzone:hover,
+      .dropzone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-soft-05);
+      }
+
+      .dropzone.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .dropzone-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .dropzone-text {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .dropzone-text strong {
+        color: var(--accent);
+        display: block;
+        margin-bottom: 3px;
+        font-size: 14px;
+      }
+
+      .file-input-hidden {
+        display: none;
+      }
+
+      .file-name {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--green);
+        font-family: var(--mono);
+        word-break: break-all;
+      }
+
+      .validation-msg {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--red);
+        display: none;
+      }
+
+      .validation-msg.show {
+        display: block;
+      }
+
+      /* ── Buttons ─────────────────────────────────────────── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: 14px;
+        font-weight: 500;
+        transition:
+          all 0.15s,
+          var(--transition);
+        width: 100%;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--white);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      .btn-success {
+        background: var(--green);
+        color: #000;
+      }
+
+      .btn-danger {
+        background: var(--red);
+        color: #fff;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: var(--red);
+        filter: brightness(0.95);
+      }
+
+
+      .btn-success:hover:not(:disabled) {
+        background: #2ea043;
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn-primary.running,
+      .btn-success.running {
+        animation: pulse 1.2s infinite;
+      }
+
+      /* ── Preview table ───────────────────────────────────── */
+      .table-wrap {
+        overflow: auto;
+        max-height: 260px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-top: 14px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      thead th {
+        background: var(--border);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 10px 12px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      tbody td {
+        padding: 9px 12px;
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      /* ── Progress + Stats ──────────────────────────────────── */
+      .hidden {
+        display: none;
+      }
+
+      .progress-wrap {
+        margin-top: 16px;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+
+      .progress-label {
+        color: var(--muted);
+      }
+
+      .progress-count {
+        color: var(--text);
+        font-family: var(--mono);
+      }
+
+      .progress-bar {
+        height: 6px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        border-radius: 99px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .current-customer {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+
+      .current-customer strong {
+        color: var(--text);
+      }
+
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .stat-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 8px;
+        text-align: center;
+      }
+
+      .stat-box .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: var(--mono);
+        line-height: 1;
+      }
+
+      .stat-box.ok .stat-value {
+        color: var(--green);
+      }
+      .stat-box.err .stat-value {
+        color: var(--red);
+      }
+      .stat-box.rem .stat-value {
+        color: var(--muted);
+      }
+      .stat-box.tot .stat-value {
+        color: var(--accent);
+      }
+
+      .stat-box .stat-label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      @media (max-width: 520px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* ── Log ─────────────────────────────────────────────── */
+      .log-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 12px;
+        height: 220px;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        transition: var(--transition);
+      }
+
+      .log-entry {
+        line-height: 1.5;
+        display: flex;
+        gap: 8px;
+      }
+      .log-time {
+        color: var(--border2);
+        flex-shrink: 0;
+      }
+      .log-text {
+        color: var(--text);
+      }
+      .log-text.ok {
+        color: var(--green);
+      }
+      .log-text.warn {
+        color: var(--accent2);
+      }
+      .log-text.err {
+        color: var(--red);
+      }
+      .log-text.info {
+        color: var(--blue);
+      }
+      .log-empty {
+        color: var(--muted);
+        font-family: var(--font);
+      }
+
+      /* ── Reset confirmation dialog ─────────────────────── */
+      #resetDialogOverlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        z-index: 1000;
+      }
+
+      #resetDialogOverlay.show {
+        display: flex;
+      }
+
+      .reset-dialog {
+        width: min(520px, 100%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 16px 60px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+      }
+
+      .reset-dialog-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+      }
+
+      .reset-dialog-body {
+        padding: 16px 18px;
+        color: var(--text);
+        font-size: 13.5px;
+        line-height: 1.7;
+        white-space: pre-line;
+      }
+
+      .reset-dialog-actions {
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 12px;
+      }
+
+      .reset-dialog-actions .btn {
+        width: auto;
+        flex: 1;
+      }
+
+      /* ── Toast ───────────────────────────────────────────── */
+
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 13px;
+        box-shadow: 0 8px 32px var(--toast-shadow);
+        transition:
+          transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+          var(--transition);
+        z-index: 999;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      #toast.success .t-icon {
+        color: var(--green);
+      }
+      #toast.error .t-icon {
+        color: var(--red);
+      }
+      #toast.info .t-icon {
+        color: var(--blue);
+      }
+
+      @media (max-width: 768px) {
+        .main {
+          padding: 16px;
+        }
+        .card-body {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ── Header ─────────────────────────────────────── -->
+      <header class="header">
+        <img src="RGB_new4.png" alt="RGB Systems" class="header-logo-img" />
+        <div>
+          <div class="header-title">Afaq <span>Importer</span></div>
+          <div class="header-crumb">استيراد العملاء</div>
+        </div>
+        <a href="/index.html" class="back-link">← رجوع لصفحة الاستيراد</a>
+        <button id="themeToggle" class="theme-toggle" title="تبديل المظهر">
+          🌙
+        </button>
+        <button id="logoutBtn" class="logout-btn" title="تسجيل الخروج">
+          خروج
+        </button>
+      </header>
+
+      <!-- ── Main ───────────────────────────────────────── -->
+      <main class="main">
+        <div class="page-col">
+          <div class="page-heading">
+            <h1>👥 استيراد العملاء</h1>
+            <p>اتصل بقاعدة البيانات، ثم ارفع ملف العملاء وابدأ الاستيراد.</p>
+          </div>
+
+          <!-- الاتصال بقاعدة البيانات -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-icon">🔌</span> الاتصال بقاعدة البيانات
+            </div>
+            <div class="card-body">
+              <div class="conn-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">غير متصل</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="txtInstance">SQL Server Instance</label>
+                  <input
+                    type="text"
+                    id="txtInstance"
+                    value="(localdb)\RGBDB"
+                  />
+                </div>
+                <div class="field">
+                  <label for="txtDatabase">اسم قاعدة البيانات</label>
+                  <input
+                    type="text"
+                    id="txtDatabase"
+                    placeholder="مثال: data2026"
+                  />
+                </div>
+              </div>
+
+              <button class="btn btn-primary" id="btnConnect" onclick="connectDB()">
+                🔗 اتصال
+              </button>
+            </div>
+          </div>
+
+          <!-- رفع ملف العملاء -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-icon">📊</span> ملف العملاء (Excel)
+            </div>
+            <div class="card-body">
+              <div
+                class="dropzone"
+                id="dropzone"
+                ondragover="onDragOver(event)"
+                ondragleave="onDragLeave(event)"
+                ondrop="onDrop(event)"
+                onclick="document.getElementById('fileInput').click()"
+              >
+                <span class="dropzone-icon">📁</span>
+                <div class="dropzone-text">
+                  <strong>اسحب الملف هنا أو اضغط للاختيار</strong>
+                  xlsx, xls, أو csv — الأعمدة المطلوبة: CustomerName, Phone,
+                  VAT
+                </div>
+              </div>
+              <input
+                type="file"
+                id="fileInput"
+                class="file-input-hidden"
+                accept=".xlsx,.xls,.csv"
+                onchange="handleFile(this)"
+              />
+              <div class="file-name" id="fileName"></div>
+              <div class="validation-msg" id="validationMsg"></div>
+
+              <div id="previewWrap"></div>
+            </div>
+          </div>
+
+          <!-- بدء الاستيراد -->
+          <div class="card">
+            <div class="card-body">
+              <div style="display:flex; gap:12px; width:100%">
+                <button
+                  class="btn btn-danger"
+                  id="btnReset"
+                  onclick="openResetDialog()"
+                  disabled
+                  style="width:auto; flex:1"
+                >
+                  ⟲ إعادة تهيئة العملاء
+                </button>
+
+                <button
+                  class="btn btn-success"
+                  id="btnStart"
+                  onclick="startImport()"
+                  disabled
+                  style="width:auto; flex:1"
+                >
+                  ▶ ابدأ الاستيراد
+                </button>
+              </div>
+
+
+              <div class="progress-wrap hidden" id="progressWrap">
+                <div class="progress-info">
+                  <span class="progress-label" id="progressLabel"
+                    >جاري الاستيراد…</span
+                  >
+                  <span class="progress-count" id="progressCount">0 / 0</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="current-customer" id="currentCustomer"></div>
+
+                <div class="stats-row">
+                  <div class="stat-box tot">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">الإجمالي</div>
+                  </div>
+                  <div class="stat-box ok">
+                    <div class="stat-value" id="statImported">0</div>
+                    <div class="stat-label">تم الاستيراد</div>
+                  </div>
+                  <div class="stat-box err">
+                    <div class="stat-value" id="statFailed">0</div>
+                    <div class="stat-label">فشل</div>
+                  </div>
+                  <div class="stat-box rem">
+                    <div class="stat-value" id="statRemaining">0</div>
+                    <div class="stat-label">متبقي</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- اللوج -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-icon">📋</span> سجل مباشر
+            </div>
+            <div class="card-body">
+              <div class="log-box" id="logBox">
+                <div class="log-empty">لا يوجد نشاط بعد.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast">
+      <span class="t-icon" id="toastIcon">✓</span>
+      <span id="toastMsg"></span>
+    </div>
+
+    <div id="resetDialogOverlay">
+      <div class="reset-dialog">
+        <div class="reset-dialog-header">⚠️ تحذير</div>
+        <div class="reset-dialog-body">
+          سيتم حذف جميع العملاء وإعادة إنشاء بيانات العملاء الافتراضية.
+          لا يمكن التراجع عن هذه العملية.
+        </div>
+        <div class="reset-dialog-actions">
+          <button class="btn btn-danger" onclick="startReset()">إعادة التهيئة</button>
+          <button class="btn" style="background:transparent; border:1px solid var(--border2); color:var(--muted);" onclick="closeResetDialog()">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+
+    <script src="theme.js"></script>
+    <script>
+      let isConnected = false;
+      let uploadedCount = 0;
+      let running = false;
+      let resetRunning = false;
+      let es = null;
+
+
+      // ── Toast ──────────────────────────────────────────────
+      let toastTimer;
+      function showToast(msg, type = "info") {
+        const el = document.getElementById("toast");
+        const icon = document.getElementById("toastIcon");
+        const txt = document.getElementById("toastMsg");
+        const icons = { success: "✓", error: "✕", info: "ℹ" };
+
+        el.className = `show ${type}`;
+        icon.textContent = icons[type] || "ℹ";
+        txt.textContent = msg;
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+      }
+
+      // ── Log ────────────────────────────────────────────────
+      function log(text, cls = "") {
+        const box = document.getElementById("logBox");
+        const empty = box.querySelector(".log-empty");
+        if (empty) empty.remove();
+
+        const now = new Date().toLocaleTimeString("ar-EG", { hour12: false });
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.innerHTML = `<span class="log-time">${now}</span><span class="log-text ${cls}">${text}</span>`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      // ── Logout (نفس سلوك باقي الصفحات) ─────────────────────
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          try {
+            await fetch("/api/logout", { method: "POST" });
+          } catch (_) {}
+          window.location.href = "/login.html";
+        });
+
+      // ── الاتصال بقاعدة البيانات ─────────────────────────────
+      async function connectDB() {
+        const btn = document.getElementById("btnConnect");
+        const dot = document.getElementById("statusDot");
+        const txt = document.getElementById("statusText");
+
+        const instance = document.getElementById("txtInstance").value.trim();
+        const database = document.getElementById("txtDatabase").value.trim();
+
+        if (!database) {
+          showToast("يرجى إدخال اسم قاعدة البيانات", "error");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "⏳ جاري الاتصال…";
+        dot.className = "status-dot connecting";
+        txt.textContent = "جاري الاتصال…";
+
+        try {
+          const res = await fetch("/api/customer-import/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ instance, database }),
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            isConnected = true;
+            dot.className = "status-dot connected";
+            txt.textContent = `متصل — ${database}`;
+            btn.textContent = "✓ متصل";
+            document.getElementById("txtDatabase").disabled = true;
+            document.getElementById("txtInstance").disabled = true;
+            log(`✅ تم الاتصال بقاعدة البيانات: ${database}`, "ok");
+            showToast("تم الاتصال بنجاح", "success");
+            updateStartButton();
+            document.getElementById("btnReset").disabled = !(isConnected && !resetRunning);
+
+          } else {
+            throw new Error(data.message || "فشل الاتصال");
+          }
+        } catch (err) {
+          isConnected = false;
+          dot.className = "status-dot";
+          txt.textContent = "غير متصل";
+          btn.disabled = false;
+          btn.textContent = "🔗 اتصال";
+          log(`❌ خطأ: ${err.message}`, "err");
+          showToast(err.message, "error");
+        }
+      }
+
+      // ── رفع الملف ─────────────────────────────────────────
+      function onDragOver(e) {
+        e.preventDefault();
+        document.getElementById("dropzone").classList.add("drag-over");
+      }
+      function onDragLeave() {
+        document.getElementById("dropzone").classList.remove("drag-over");
+      }
+      function onDrop(e) {
+        e.preventDefault();
+        document.getElementById("dropzone").classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) uploadFile(file);
+      }
+      function handleFile(input) {
+        const file = input.files[0];
+        if (file) uploadFile(file);
+      }
+
+      async function uploadFile(file) {
+        const allowed = [".xlsx", ".xls", ".csv"];
+        const ok = allowed.some((ext) =>
+          file.name.toLowerCase().endsWith(ext),
+        );
+        if (!ok) {
+          showToast("الصيغ المسموحة فقط: xlsx, xls, csv", "error");
+          return;
+        }
+
+        document.getElementById("fileName").textContent = file.name;
+        document.getElementById("validationMsg").classList.remove("show");
+        log(`📂 جاري قراءة: ${file.name}`, "info");
+
+        const form = new FormData();
+        form.append("file", file);
+
+        try {
+          const res = await fetch("/api/customer-import/upload", {
+            method: "POST",
+            body: form,
+          });
+          const data = await res.json();
+
+          if (!data.success) {
+            uploadedCount = 0;
+            const vmsg = document.getElementById("validationMsg");
+            vmsg.textContent = data.message;
+            vmsg.classList.add("show");
+            document.getElementById("previewWrap").innerHTML = "";
+            log(`❌ ${data.message}`, "err");
+            showToast(data.message, "error");
+            updateStartButton();
+            return;
+          }
+
+          uploadedCount = data.count;
+          renderPreview(data.preview || []);
+          log(`✅ تم قراءة ${data.count} عميل من الملف`, "ok");
+          showToast(`تم تحميل ${data.count} عميل`, "success");
+          updateStartButton();
+        } catch (err) {
+          log(`❌ خطأ في قراءة الملف: ${err.message}`, "err");
+          showToast(err.message || "خطأ في قراءة الملف", "error");
+        }
+      }
+
+      function renderPreview(rows) {
+        const wrap = document.getElementById("previewWrap");
+        if (!rows.length) {
+          wrap.innerHTML = "";
+          return;
+        }
+
+        let html = `<div class="table-wrap"><table>
+          <thead><tr><th>CustomerName</th><th>Phone</th><th>VAT</th></tr></thead>
+          <tbody>`;
+
+        rows.forEach((r) => {
+          html += `<tr><td>${r.CustomerName ?? ""}</td><td>${r.Phone ?? ""}</td><td>${r.VAT ?? ""}</td></tr>`;
+        });
+
+        html += "</tbody></table></div>";
+        if (uploadedCount > rows.length) {
+          html += `<div style="text-align:center;color:var(--muted);font-size:12px;margin-top:8px">… و ${uploadedCount - rows.length} عميل آخر</div>`;
+        }
+        wrap.innerHTML = html;
+      }
+
+      // ── الاستيراد ─────────────────────────────────────────
+      function updateStartButton() {
+        const btnStart = document.getElementById("btnStart");
+        btnStart.disabled = !(
+          isConnected &&
+          uploadedCount > 0 &&
+          !running &&
+          !resetRunning
+        );
+
+        const btnReset = document.getElementById("btnReset");
+        btnReset.disabled = !(isConnected && !resetRunning);
+      }
+
+
+      function updateProgress(current, total) {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressCount").textContent =
+          `${current} / ${total}`;
+        document.getElementById("progressLabel").textContent =
+          current < total ? `جاري الاستيراد… ${pct}%` : "اكتمل ✅";
+      }
+
+      function openResetDialog() {
+        if (resetRunning) return;
+
+        document.getElementById("resetDialogOverlay").classList.add("show");
+      }
+
+      function closeResetDialog() {
+        document.getElementById("resetDialogOverlay").classList.remove("show");
+      }
+
+      async function startReset() {
+        if (resetRunning || !isConnected) return;
+
+        resetRunning = true;
+
+        const btnReset = document.getElementById("btnReset");
+        const btnStart = document.getElementById("btnStart");
+        btnReset.disabled = true;
+        btnStart.disabled = true;
+
+        closeResetDialog();
+
+        log("⚠️ بدء إعادة تهيئة العملاء…", "warn");
+        showToast("جاري إعادة التهيئة...", "info");
+
+        try {
+          const res = await fetch("/api/customer-import/reset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          });
+
+          if (!res.ok || !res.body) {
+            throw new Error("فشل بدء إعادة التهيئة");
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Parse SSE-like lines: data: {...}
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop() || "";
+
+            for (const part of parts) {
+              const line = part
+                .split("\n")
+                .find((l) => l.startsWith("data:"));
+              if (!line) continue;
+
+              const jsonStr = line.replace(/^data:\s?/, "");
+              let msg;
+              try {
+                msg = JSON.parse(jsonStr);
+              } catch (_) {
+                continue;
+              }
+
+              if (msg.type === "progress") {
+                log(msg.message, "warn");
+              } else if (msg.type === "done") {
+                log("✅ Completed Successfully.", "ok");
+                showToast("Completed Successfully.", "success");
+              } else if (msg.type === "error") {
+                log(`❌ ${msg.message || "خطأ"}` , "err");
+                showToast(msg.message || "خطأ", "error");
+              }
+            }
+          }
+        } catch (err) {
+          log(`❌ ${err.message || "خطأ"}` , "err");
+          showToast(err.message || "خطأ", "error");
+        } finally {
+          resetRunning = false;
+          updateStartButton();
+        }
+      }
+
+      function startImport() {
+        if (running || !isConnected || uploadedCount === 0) return;
+
+
+        running = true;
+        const btn = document.getElementById("btnStart");
+        btn.disabled = true;
+        btn.classList.add("running");
+        btn.textContent = "⏳ جاري الاستيراد…";
+
+        document.getElementById("progressWrap").classList.remove("hidden");
+        updateProgress(0, uploadedCount);
+        document.getElementById("statTotal").textContent = uploadedCount;
+        document.getElementById("statImported").textContent = "0";
+        document.getElementById("statFailed").textContent = "0";
+        document.getElementById("statRemaining").textContent = uploadedCount;
+        document.getElementById("currentCustomer").textContent = "";
+
+        log("🚀 بدء استيراد العملاء…", "info");
+
+        es = new EventSource("/api/customer-import/start");
+
+        es.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+
+          if (msg.type === "total") {
+            updateProgress(0, msg.total);
+            document.getElementById("statTotal").textContent = msg.total;
+            document.getElementById("statRemaining").textContent = msg.total;
+          } else if (msg.type === "log") {
+            log(msg.message, "info");
+          } else if (msg.type === "progress") {
+            updateProgress(msg.current, msg.total);
+            document.getElementById("statImported").textContent = msg.imported;
+            document.getElementById("statFailed").textContent = msg.failed;
+            document.getElementById("statRemaining").textContent =
+              msg.remaining;
+            document.getElementById("currentCustomer").innerHTML =
+              `آخر عميل: <strong>${msg.name || ""}</strong>`;
+
+            const icon =
+              msg.status === "done"
+                ? "✔"
+                : msg.status === "skipped"
+                  ? "↷"
+                  : "✖";
+            const cls =
+              msg.status === "done"
+                ? "ok"
+                : msg.status === "error"
+                  ? "err"
+                  : "warn";
+
+            log(
+              `${icon} ${msg.name || ""} ${
+                msg.status === "done"
+                  ? "تم إضافته"
+                  : msg.status === "error"
+                    ? "فشل: " + (msg.error || "")
+                    : "تم تخطيه"
+              }`,
+              cls,
+            );
+          } else if (msg.type === "done") {
+            es.close();
+            es = null;
+            running = false;
+
+            updateProgress(msg.total, msg.total);
+            btn.classList.remove("running");
+            btn.disabled = false;
+            btn.textContent = "🔄 إعادة الاستيراد";
+
+            log(
+              `🎉 اكتمل — نجح: ${msg.imported} — تخطي: ${msg.skipped} — فشل: ${msg.failed}`,
+              "ok",
+            );
+            showToast("اكتمل استيراد العملاء", "success");
+          } else if (msg.type === "error") {
+            es.close();
+            es = null;
+            running = false;
+
+            btn.classList.remove("running");
+            btn.disabled = false;
+            btn.textContent = "▶ ابدأ الاستيراد";
+
+            log(`❌ خطأ: ${msg.message}`, "err");
+            showToast(msg.message, "error");
+          }
+        };
+
+        es.onerror = () => {
+          if (!running) return;
+
+          es.close();
+          es = null;
+          running = false;
+
+          const btnEl = document.getElementById("btnStart");
+          btnEl.classList.remove("running");
+          btnEl.disabled = false;
+          btnEl.textContent = "▶ ابدأ الاستيراد";
+
+          log("❌ انقطع الاتصال أثناء الاستيراد", "err");
+          showToast("خطأ في الاستيراد", "error");
+        };
+      }
+    </script>
+  </body>
+</html>
