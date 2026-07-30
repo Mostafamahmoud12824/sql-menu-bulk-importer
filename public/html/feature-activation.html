@@ -35,7 +35,8 @@
         --blue: #3b82f6;
         --white: #ffffff;
         --black: #000000;
-        --radius: 8px;
+        --radius: 10px;
+        --radius-sm: 8px;
         --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
         --mono: "JetBrains Mono", monospace;
         --transition:
@@ -50,6 +51,15 @@
         --accent-hover: #1d4ed8;
         --red-soft-15: rgba(220, 38, 38, 0.15);
         --green-soft-15: rgba(22, 163, 74, 0.15);
+
+        /* 8px spacing scale — used instead of arbitrary values */
+        --sp-1: 8px;
+        --sp-2: 16px;
+        --sp-3: 24px;
+        --sp-4: 32px;
+
+        /* Layout */
+        --container-max: 1100px;
       }
 
       [data-theme="dark"] {
@@ -105,10 +115,10 @@
       .header {
         background: var(--surface);
         border-bottom: 1px solid var(--border);
-        padding: 14px 24px;
+        padding: var(--sp-2) var(--sp-3);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--sp-2);
         transition: var(--transition);
       }
 
@@ -134,8 +144,10 @@
         color: var(--muted);
       }
 
+      /* Logical property: works correctly in both RTL and LTR without
+         needing a lang-en override rule. */
       .back-link {
-        margin-right: auto;
+        margin-inline-start: auto;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -144,14 +156,11 @@
         color: var(--text);
         font-family: var(--font);
         font-size: 12.5px;
-        border-radius: var(--radius);
+        border-radius: var(--radius-sm);
         padding: 7px 14px;
         text-decoration: none;
         transition: all 0.15s;
-      }
-      body.lang-en .back-link {
-        margin-right: 0;
-        margin-left: auto;
+        white-space: nowrap;
       }
 
       .back-link:hover {
@@ -163,20 +172,22 @@
       .lang-toggle {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         padding: 6px 12px;
         font-size: 13px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: var(--transition);
+        transition: var(--transition), transform 0.15s ease;
         box-shadow: 0 1px 3px var(--card-shadow);
         font-family: var(--font);
         color: var(--text);
+        font-weight: 600;
       }
       .theme-toggle {
         font-size: 18px;
+        font-weight: normal;
       }
 
       .theme-toggle:hover,
@@ -185,13 +196,20 @@
         transform: scale(1.05);
       }
 
+      .theme-toggle:focus-visible,
+      .lang-toggle:focus-visible,
+      .logout-btn:focus-visible,
+      .back-link:focus-visible {
+        box-shadow: 0 0 0 3px var(--blue-soft-08);
+      }
+
       .logout-btn {
         background: transparent;
         border: 1px solid var(--border2);
         color: var(--muted);
         font-family: var(--font);
         font-size: 12.5px;
-        border-radius: var(--radius);
+        border-radius: var(--radius-sm);
         padding: 7px 14px;
         cursor: pointer;
         transition: all 0.15s;
@@ -202,29 +220,32 @@
         color: var(--red);
       }
 
-      /* ── Main ────────────────────────────────────────────── */
+      /* ── Main / Page container ─────────────────────────────
+         Perfectly centered, ERP-standard content width. */
       .main {
-        padding: 24px;
+        padding: var(--sp-4) var(--sp-3);
         display: flex;
         justify-content: center;
       }
 
       .page-col {
-        width: min(100%, 820px);
+        width: min(100%, var(--container-max));
         display: flex;
         flex-direction: column;
-        gap: 20px;
-        padding-bottom: 40px;
+        gap: var(--sp-3);
+        padding-bottom: var(--sp-4);
       }
 
       .page-heading h1 {
-        font-size: 20px;
+        font-size: 28px;
         font-weight: 700;
+        letter-spacing: 0.2px;
+        line-height: 1.25;
       }
 
       .page-heading p {
-        margin-top: 4px;
-        font-size: 13px;
+        margin-top: var(--sp-1);
+        font-size: 15px;
         color: var(--muted);
       }
 
@@ -234,39 +255,50 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         overflow: hidden;
-        transition: var(--transition);
-        box-shadow: 0 1px 2px var(--card-shadow);
+        transition: var(--transition), box-shadow 0.2s ease;
+        box-shadow: 0 1px 2px var(--card-shadow), 0 1px 1px var(--card-shadow);
       }
 
+      /* Section header — clearer visual hierarchy (larger type,
+         subtle tinted background, accent bar on the leading edge) */
       .card-header {
-        padding: 14px 18px;
+        padding: var(--sp-2) var(--sp-3);
         border-bottom: 1px solid var(--border);
+        border-inline-start: 3px solid var(--accent);
+        background: var(--accent-soft-05);
         display: flex;
         align-items: center;
-        gap: 9px;
-        font-size: 14px;
-        font-weight: 650;
-        letter-spacing: 0.2px;
-        line-height: 1.2;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0.1px;
+        line-height: 1.3;
       }
 
       .card-icon {
-        font-size: 15px;
+        font-size: 17px;
+        line-height: 1;
       }
 
       .card-body {
-        padding: 10px 18px 14px;
+        padding: var(--sp-1) var(--sp-3) var(--sp-2);
       }
 
-      /* ── Feature Row / Toggle Switch ───────────────────────── */
+      /* ── Feature Row / Toggle Switch ─────────────────────────
+         Fixed min-height, generous equal padding on both sides,
+         perfect vertical centering, and a hover surface that visually
+         binds the label + toggle together as one control. */
       .feature-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 14px;
-        padding: 11px 0;
-        min-height: 52px; /* consistent settings-row height */
+        gap: var(--sp-2);
+        min-height: 56px;
+        padding: var(--sp-1) var(--sp-1);
+        margin-inline: calc(var(--sp-1) * -1);
         border-bottom: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
       }
 
       .feature-row:last-child {
@@ -274,30 +306,34 @@
       }
 
       .feature-row:hover {
-        border-bottom-color: var(--border2);
+        background: var(--bg);
+        border-bottom-color: var(--border);
       }
 
       .feature-info {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        gap: 1px;
+        gap: 3px;
         min-width: 0;
+        /* text is always aligned to the reading-start side (right in
+           RTL, left in LTR) automatically via inline flow */
+        text-align: start;
       }
 
       .feature-name {
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text);
-        line-height: 1.25;
+        line-height: 1.3;
         overflow-wrap: anywhere;
       }
 
       .feature-key {
-        font-size: 10.7px;
+        font-size: 12px;
         color: var(--muted);
         font-family: var(--mono);
-        line-height: 1.1;
+        line-height: 1.2;
       }
 
       .toggle-switch {
@@ -327,7 +363,7 @@
       .toggle-switch .knob {
         position: absolute;
         top: 3px;
-        left: 3px;
+        inset-inline-start: 3px;
         width: 22px;
         height: 22px;
         border-radius: 50%;
@@ -354,30 +390,65 @@
         pointer-events: none;
       }
 
-      /* ── Action bar ──────────────────────────────────────── */
+      /* ── Action bar (buttons polish) ─────────────────────────
+         Equal height, equal width, consistent spacing/hover/disabled. */
       .action-bar {
         display: flex;
-        gap: 10px;
+        gap: var(--sp-2);
         flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: space-between;
       }
 
       .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 7px;
-        padding: 11px 20px;
-        border-radius: 6px;
-        border: none;
+        gap: 8px;
+        padding: 0 var(--sp-2);
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
         cursor: pointer;
         font-family: var(--font);
         font-size: 14px;
         font-weight: 600;
-        transition: all 0.15s, var(--transition);
-        flex: 1 1 160px;
-        min-height: 44px;
         line-height: 1;
         outline: none;
+
+        height: 48px;
+        min-height: 48px;
+        min-width: 160px;
+
+        transition:
+          background-color 0.25s ease,
+          color 0.25s ease,
+          border-color 0.25s ease,
+          box-shadow 0.25s ease,
+          transform 0.2s ease,
+          opacity 0.2s ease;
+
+        flex: 1 1 0;
+        user-select: none;
+      }
+
+      .btn > span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(0px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+
+      .btn:focus-visible {
+        box-shadow: 0 0 0 3px var(--blue-soft-08);
       }
 
       .btn-primary {
@@ -390,7 +461,7 @@
 
       .btn-secondary {
         background: transparent;
-        border: 1px solid var(--border2);
+        border-color: var(--border2);
         color: var(--text);
       }
       .btn-secondary:hover:not(:disabled) {
@@ -400,21 +471,37 @@
 
       .btn-danger-outline {
         background: transparent;
-        border: 1px solid var(--red);
+        border-color: var(--red);
         color: var(--red);
       }
       .btn-danger-outline:hover:not(:disabled) {
         background: var(--red-soft-15);
       }
 
-      .btn:focus-visible {
-        box-shadow: 0 0 0 3px var(--blue-soft-08);
-      }
-
       .btn:disabled {
-        opacity: 0.4;
+        opacity: 0.5;
         cursor: not-allowed;
         box-shadow: none;
+        transform: none;
+      }
+
+      .btn-primary:disabled {
+        background: var(--accent);
+        color: rgba(255, 255, 255, 0.85);
+        border-color: rgba(37, 99, 235, 0.35);
+      }
+
+      .btn-secondary:disabled {
+        background: transparent;
+        border-color: var(--border2);
+        color: var(--muted);
+      }
+
+      .btn-danger-outline:disabled {
+        background: transparent;
+        border-color: var(--red);
+        color: var(--red);
+        opacity: 0.5;
       }
 
       .status-pill {
@@ -445,7 +532,7 @@
       .loading-state,
       .empty-state {
         text-align: center;
-        padding: 32px 16px;
+        padding: var(--sp-4) var(--sp-2);
         color: var(--muted);
         font-size: 13.5px;
       }
@@ -453,12 +540,12 @@
       /* ── Toast ───────────────────────────────────────────── */
       #toast {
         position: fixed;
-        bottom: 24px;
+        bottom: var(--sp-3);
         left: 50%;
         transform: translateX(-50%) translateY(80px);
         background: var(--surface);
         border: 1px solid var(--border2);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         padding: 12px 18px;
         font-size: 13px;
         box-shadow: 0 8px 32px var(--toast-shadow);
@@ -483,15 +570,42 @@
         color: var(--blue);
       }
 
+      /* ── Responsive ──────────────────────────────────────────
+         Desktop: 1100px container (default above).
+         Tablet:  90% width.
+         Mobile:  100% width, buttons stack vertically. */
+      @media (max-width: 1024px) {
+        .page-col {
+          width: 90%;
+        }
+      }
+
       @media (max-width: 768px) {
         .main {
-          padding: 16px;
+          padding: var(--sp-2);
         }
         .card-body {
-          padding: 8px 14px 12px;
+          padding: var(--sp-1) var(--sp-2) var(--sp-2);
+        }
+        .card-header {
+          padding: var(--sp-2);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page-col {
+          width: 100%;
+          gap: var(--sp-2);
+        }
+        .page-heading h1 {
+          font-size: 22px;
+        }
+        .action-bar {
+          flex-direction: column;
         }
         .action-bar .btn {
           flex: 1 1 100%;
+          width: 100%;
         }
       }
     </style>
@@ -509,9 +623,9 @@
         <button
           id="langToggle"
           class="lang-toggle"
-          title="Switch language / تبديل اللغة"
+          title="تبديل اللغة / Switch language"
         >
-          EN
+          AR
         </button>
         <button id="themeToggle" class="theme-toggle" title="تبديل المظهر">
           🌙
@@ -627,28 +741,40 @@
       // ── i18n (عربي / إنجليزي) ─────────────────────────────────────────
       const I18N = {
         ar: {
-          crumb: "تفعيل الميزات",
+          crumb: "تفعيل الميزات برنامج افاق",
           back: "← رجوع لصفحة الاستيراد",
           title: "⚙️ تفعيل الميزات",
           subtitle: "إدارة ميزات التطبيق",
-          loading: "جاري تحميل الإعدادات…",
-          groupCore: "الوحدات الأساسية",
+          loading: "جارٍ تحميل بيانات التفعيل…",
+          groupCore: "تفعيل خصائص النظام",
           groupPos: "ميزات نقاط البيع",
           groupSa: "ميزات المملكة العربية السعودية",
-          save: "حفظ الإعدادات",
+          save: "تفعيل الاعدادات",
           reset: "استرجاع الإعدادات الافتراضية",
           cancel: "إلغاء",
           noChanges: "لا توجد تغييرات",
           unsavedChanges: "توجد تغييرات غير محفوظة",
+
+
           names: {
-            EnableAdministration: "تفعيل الإدارة",
-            EnablePurchases: "تفعيل المشتريات",
-            EnableCashBox: "تفعيل الخزينة",
+            EnableAdministration: "تفعيل نظام الإدارة",
+            EnablePurchases: "تفعيل نظام المشتريات",
+            EnableCashBox: "تفعيل الصندوق",
             EnableLoyaltyPoints: "تفعيل نقاط الولاء",
-            EnablePOSBarcode: "تفعيل باركود المنتج",
-            EnableWarehouses: "تفعيل المخازن",
+            EnablePOSBarcode: "تفعيل باركود الأصناف",
+            EnableWarehouses: "تفعيل المستودعات والمخازن",
             EnableAccountingEntries: "تفعيل القيود المحاسبية",
-            EnableZATCA: "تفعيل تكامل فاتورة (ZATCA)",
+            EnableZATCA: "تفعيل الربط مع هيئة الزكاة والضريبة والجمارك",
+          },
+          keyDisplay: {
+            EnableAdministration: "الإدارة",
+            EnablePurchases: "المشتريات",
+            EnableCashBox: "الصندوق",
+            EnableLoyaltyPoints: "نقاط الولاء",
+            EnablePOSBarcode: "باركود الأصناف",
+            EnableWarehouses: "المستودعات",
+            EnableAccountingEntries: "القيود المحاسبية",
+            EnableZATCA: "ربط هيئة الزكاة",
           },
         },
         en: {
@@ -782,12 +908,17 @@
 
           const displayName = t.names[key] || key;
 
+          // Optional small subtitle beneath each option (visible text only).
+          // Keep the underlying key intact (data-key remains `key`).
+          const displayKey = t.keyDisplay?.[key] || displayName;
+
+
           const row = document.createElement("div");
           row.className = "feature-row";
           row.innerHTML = `
             <div class="feature-info">
               <span class="feature-name">${displayName}</span>
-              <span class="feature-key">${key}</span>
+              <span class="feature-key">${displayKey}</span>
             </div>
             <button
               type="button"
@@ -802,6 +933,7 @@
           `;
           container.appendChild(row);
         }
+
 
         container.querySelectorAll(".toggle-switch").forEach((el) => {
           el.addEventListener("click", () => toggleFeature(el));

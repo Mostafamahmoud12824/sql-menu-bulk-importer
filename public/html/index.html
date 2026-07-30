@@ -941,14 +941,13 @@
         <a href="/customer-import.html" class="google-images-nav-btn" title="صفحة منفصلة لاستيراد العملاء">
           👥 إضافة العملاء
         </a>
-        <button
-          id="featureActivationNavBtn"
+        <a
+          href="/feature-activation.html"
           class="google-images-nav-btn"
           title="إدارة ميزات التطبيق"
-          type="button"
         >
           ⚙️ التفعيلات
-        </button>
+        </a>
 
 
         <button id="themeToggle" class="theme-toggle" title="تبديل المظهر">
@@ -1143,15 +1142,6 @@
 
       <!-- ── Main ───────────────────────────────────────── -->
       <main class="main" id="dashboardMain">
-      <!-- Feature Activation module container (isolated; no dashboard layout injection) -->
-      <section
-        id="featureActivationSection"
-        class="feature-activation-page hidden"
-        aria-hidden="true"
-      ></section>
-
-
-
         <!-- Progress -->
         <div class="progress-wrap" id="progressWrap">
 
@@ -1219,8 +1209,6 @@
     </div>
 
     <link rel="stylesheet" href="/feature-activation-dashboard.css" />
-
-    <script src="/feature-activation.js"></script>
 
     <script>
 
@@ -2049,155 +2037,7 @@
           btn.textContent = originalText;
         }
       }
-      // ── Feature Activation module mount/unmount ─────────────────────────
-      (function initFeatureActivationModuleToggle() {
-        const section = document.getElementById("featureActivationSection");
-        const navBtn = document.getElementById("featureActivationNavBtn");
-        if (!section || !navBtn) return;
 
-        let isOpen = false;
-
-        function renderModuleSkeleton() {
-          section.innerHTML = `
-            <div class="fa-page-col">
-              <div id="featureLoading" class="loading-state">Loading feature settings…</div>
-              <div id="featureContent" hidden>
-                <div class="fa-card">
-                  <div class="fa-card-header">Database Connection</div>
-                  <div class="fa-card-body connection-grid">
-                    <label class="connection-field">Server<input id="featureConnectionServer" disabled /></label>
-                    <label class="connection-field">Database Name<input id="featureConnectionDatabase" disabled /></label>
-                    <label class="connection-field">Username<input id="featureConnectionUsername" disabled /></label>
-                    <label class="connection-field">Password<input id="featureConnectionPassword" type="password" disabled /></label>
-                  </div>
-                </div>
-                <div class="fa-card">
-                  <div class="fa-card-header">Feature Toggles</div>
-                  <div class="fa-card-body" id="featureToggleList"></div>
-                  <div class="fa-card-body action-bar"><button class="btn btn-primary" id="btnSave" disabled>Save</button></div>
-                </div>
-              </div>
-              <div id="featureError" class="empty-state" hidden></div>
-            </div>
-          `;
-          return;
-
-          // Inject only the minimal internal markup needed by feature-activation.js
-          // (no global containers copied from feature-activation.html).
-          section.innerHTML = `
-            <div class="fa-page-col">
-              <div class="fa-page-heading">
-                <h1 id="pageTitle">⚙️ تفعيل الميزات</h1>
-                <p id="pageSubtitle">إدارة ميزات التطبيق</p>
-              </div>
-
-              <div id="loadingState" class="loading-state">
-                ⏳ <span id="loadingText">جاري تحميل الإعدادات…</span>
-              </div>
-
-              <div id="settingsWrap" class="hidden-wrap" style="display:none">
-                <div class="fa-card">
-                  <div class="fa-card-header">
-                    <span class="card-icon">🧩</span>
-                    <span id="groupCoreTitle">الوحدات الأساسية</span>
-                  </div>
-                  <div class="fa-card-body" id="groupCore"></div>
-                </div>
-
-                <div class="fa-card">
-                  <div class="fa-card-header">
-                    <span class="card-icon">🛒</span>
-                    <span id="groupPosTitle">ميزات نقاط البيع</span>
-                  </div>
-                  <div class="fa-card-body" id="groupPos"></div>
-                </div>
-
-                <div class="fa-card">
-                  <div class="fa-card-header">
-                    <span class="card-icon">🇸🇦</span>
-                    <span id="groupSaTitle">ميزات المملكة العربية السعودية</span>
-                  </div>
-                  <div class="fa-card-body" id="groupSa"></div>
-                </div>
-
-                <div class="fa-card">
-                  <div class="fa-card-body" style="padding:18px">
-                    <div
-                      style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px"
-                    >
-                      <span class="status-pill" id="statusPill">
-                        <span class="status-dot-sm saved" id="statusDotSm"></span>
-                        <span id="statusPillText">لا توجد تغييرات</span>
-                      </span>
-                    </div>
-
-                    <div class="action-bar">
-                      <button class="btn btn-primary" id="btnSave" disabled>
-                        💾 <span id="btnSaveText">حفظ الإعدادات</span>
-                      </button>
-                      <button class="btn btn-danger-outline" id="btnReset">
-                        ♻️ <span id="btnResetText">استرجاع الإعدادات الافتراضية</span>
-                      </button>
-                      <button class="btn btn-secondary" id="btnCancel">
-                        ✕ <span id="btnCancelText">إلغاء</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div id="errorState" class="empty-state" style="display:none"></div>
-            </div>
-          `;
-        }
-
-        function open() {
-          if (isOpen) return;
-          isOpen = true;
-
-          // Hide other dashboard cards without touching their CSS
-          Array.from(document.querySelectorAll("#dashboardMain > :not(#featureActivationSection)"))
-            .forEach((el) => {
-              el.style.display = "none";
-            });
-
-          section.classList.remove("hidden");
-          section.setAttribute("aria-hidden", "false");
-
-          if (!section.dataset.mounted) {
-            renderModuleSkeleton();
-            section.dataset.mounted = "1";
-          }
-
-          if (window.FeatureActivationDashboard?.init) {
-            window.FeatureActivationDashboard.init("dashboard");
-          }
-        }
-
-        function close() {
-          if (!isOpen) return;
-          isOpen = false;
-
-          section.classList.add("hidden");
-          section.setAttribute("aria-hidden", "true");
-
-          Array.from(document.querySelectorAll("#dashboardMain > :not(#featureActivationSection)"))
-            .forEach((el) => {
-              el.style.display = "";
-            });
-
-          if (window.FeatureActivationDashboard?.destroy) {
-            window.FeatureActivationDashboard.destroy();
-          }
-          delete section.dataset.mounted;
-        }
-
-        navBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (isOpen) close();
-          else open();
-        });
-      })();
 
       // ── Logout ─────────────────────────────────────────────────────────
       document

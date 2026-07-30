@@ -2,6 +2,20 @@
 
 (() => {
   const API = "/api/feature-activation/settings";
+
+  // ── Presentation-layer i18n (UI-only) ─────────────────────────────
+  // بدون أي تغيير في المنطق: فقط ترجمة النصوص المعروضة.
+  const featureTranslations = {
+    EnableAdministration: "تفعيل نظام الإدارة",
+    EnablePurchases: "تفعيل نظام المشتريات",
+    EnableCashBox: "تفعيل الصندوق",
+    EnableLoyaltyPoints: "تفعيل نقاط الولاء",
+    EnablePOSBarcode: "تفعيل باركود الأصناف",
+    EnableWarehouses: "تفعيل المستودعات",
+    EnableAccountingEntries: "تفعيل القيود المحاسبية",
+    EnableZATCA: "تفعيل الربط مع هيئة الزكاة والضريبة والجمارك",
+  };
+
   let settings = [];
   let values = {};
   let toastTimer;
@@ -55,8 +69,11 @@
         <div class="feature-info"><span class="feature-name"></span><span class="feature-key"></span></div>
         <button type="button" class="toggle-switch ${value ? "on" : ""}" data-key="${setting.SettingKey}" role="switch" aria-checked="${value ? "true" : "false"}"><span class="knob"></span></button>
       `;
-      row.querySelector(".feature-name").textContent = setting.SettingName;
-      row.querySelector(".feature-key").textContent = setting.SettingKey;
+      row.querySelector(".feature-name").textContent =
+        featureTranslations[setting.SettingKey] || setting.SettingName;
+      // Keep key intact internally; translate only visible label text.
+      row.querySelector(".feature-key").textContent =
+        featureTranslations[setting.SettingKey] || setting.SettingKey;
       const toggle = row.querySelector(".toggle-switch");
       toggle.addEventListener("click", () => {
         values[setting.SettingKey] = values[setting.SettingKey] ? 0 : 1;
